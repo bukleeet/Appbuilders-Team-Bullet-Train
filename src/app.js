@@ -5,6 +5,12 @@ import { assistantPage } from './assistant-ui.js';
 let state = load(), page = 'Today', preview = null, selected = null;
 let agendaMode = 'timeline', weekMode = 'grid', offset = 0, notice = '', failed = false;
 let assistantDraft='';
+function resizeAssistantDraft() {
+  const field=document.querySelector('#assistant-draft');
+  if(!field)return;
+  field.style.height='auto';
+  field.style.height=`${field.scrollHeight+field.offsetHeight-field.clientHeight}px`;
+}
 const app = document.querySelector('#app');
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const icon = name => `<img class="icon" src="/public/icons/${name}.svg" alt="" aria-hidden="true">`;
@@ -30,6 +36,7 @@ function render() {
   const nav={Today:'calendar',Week:'columns-3',Tasks:'circle-check',Settings:'settings-2'};
 app.innerHTML=`<aside class="sidebar"><div class="brand">${icon('notebook')}<div><span>WeekBack</span><small>Quiet Academic Planner</small></div></div><nav aria-label="Main navigation">${Object.keys(nav).map(n=>`<button data-page="${n}" class="nav-item ${page===n?'selected':''}" ${page===n?'aria-current="page"':''}>${icon(nav[n])}${n}</button>`).join('')}</nav><div class="sidebar-bottom"><div class="local-note">${icon('shield-check')} Saved in this browser</div><button class="profile" data-page="Assistant">${icon('notebook')}<span>Ask WeekBack<small>Your schedule assistant</small></span></button></div></aside><div class="workspace"><header class="topbar"><div class="date-controls"><div class="week-switch"><button data-shift="-7" aria-label="Previous week">${icon('chevron-left')}</button><span>${date(offset)} – ${date(offset+6)}</span><button data-shift="7" aria-label="Next week">${icon('chevron-right')}</button></div><button class="soft" data-today>Today</button></div><div class="connection"><span class="pill ${failed?'error-pill':'saved'}">${failed?'Save failed':'Saved on this device'}</span><span class="pill model">${icon(navigator.onLine?'circle-help':'wifi-off')}${navigator.onLine?'Local AI not connected':'Offline · manual mode'}</span></div><button class="primary" data-add>${icon('plus')} Add Task</button></header><main>${notice?`<div class="notice ${failed?'warning':''}" role="status">${esc(notice)}<button data-dismiss aria-label="Dismiss notification">${icon('x')}</button></div>`:''}${state.previous&&!preview?'<button class="undo-button" data-undo>Undo last recovery</button>':''}${preview?recovery():page==='Today'?today():page==='Week'?week():page==='Tasks'?tasks():page==='Assistant'?assistantPage(assistantDraft):settings()}</main></div>`;
   if (page === 'Week' && !preview) app.querySelector('main').insertAdjacentHTML('afterbegin', '<button class="primary" data-planner>Manage study plan & recovery</button>');
+  resizeAssistantDraft();
   const calendarScroll = app.querySelector('.calendar-scroll');
   if (calendarScroll) calendarScroll.scrollTop = 8 * 120;
 }
@@ -97,7 +104,8 @@ app.addEventListener('click',e=>{
   else if('export'in d){const url=URL.createObjectURL(new Blob([JSON.stringify({schemaVersion:1,...state},null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='weekback-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 });
 app.addEventListener('change',e=>{if(e.target.id==='recovery-day'){preview.day=Number(e.target.value);render();}});
-app.addEventListener('input',e=>{if(e.target.id==='assistant-draft')assistantDraft=e.target.value;});
+app.addEventListener('input',e=>{if(e.target.id==='assistant-draft'){assistantDraft=e.target.value;resizeAssistantDraft();}});
+window.addEventListener('resize',resizeAssistantDraft);
 app.addEventListener('submit',e=>{
   e.preventDefault();const f=new FormData(e.target);
   if(e.target.getAttribute('id')==='task-form'){

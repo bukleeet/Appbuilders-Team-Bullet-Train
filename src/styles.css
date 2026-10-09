@@ -27,6 +27,7 @@ dialog{padding:0;border:1px solid #e5edf3;border-radius:10px;width:min(900px,94v
 .assistant-prompts{display:grid;gap:8px;margin:24px 0}
 .assistant-prompts .soft{text-align:left;justify-content:flex-start}
 .assistant-composer{display:flex;align-items:center;gap:20px;margin-top:14px}
+#assistant-draft{resize:none;overflow:hidden;min-height:80px}
 .assistant-composer small{color:#62707a;line-height:1.5;flex:1}
 .assistant-context{align-self:start;line-height:1.7}
 .assistant-context .eyebrow{font-size:10px}
