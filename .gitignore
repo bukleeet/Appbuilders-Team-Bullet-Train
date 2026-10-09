@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env*
+archive/
+mockup-v2/
+stitch_weekback_student_planner/
+design-v3/
