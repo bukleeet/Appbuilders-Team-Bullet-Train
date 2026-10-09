@@ -17,6 +17,8 @@ import {
   createAppState,
   createTask,
   createStudyBlock,
+  createCommitment,
+  createWindow,
   validateAppState,
   validatePlanProposal,
   SCHEMA_VERSION,
@@ -122,92 +124,105 @@ export function getStorage(customStorage) {
  * @returns {import('./model.js').AppState}
  */
 export function migrateV1(rawV1, storage) {
-  // 1. Immediately create a backup of the untouched v1 data
-  try {
-    storage.setItem(STORAGE_KEY_V1_BACKUP, rawV1);
-  } catch (err) {
-    console.warn('WeekBack: Could not write v1 backup before migration:', err);
-  }
+  try { storage.setItem(STORAGE_KEY_V1_BACKUP, rawV1); }
+  catch (err) { console.warn('WeekBack: Could not write v1 backup before migration:', err); }
 
   let parsedV1;
-  try {
-    parsedV1 = JSON.parse(rawV1);
-  } catch (parseErr) {
+  try { parsedV1 = JSON.parse(rawV1); }
+  catch {
     console.warn('WeekBack: v1 data is not valid JSON, returning clean state.');
     return createAppState();
   }
+  if (!parsedV1 || !Array.isArray(parsedV1.tasks)) return createAppState();
 
-  if (!parsedV1 || !Array.isArray(parsedV1.tasks)) {
-    return createAppState();
-  }
-
-  // Determine current week's base date in Asia/Manila for stable date resolution
-  const now = new Date();
-  const { date: todayDateStr } = toLocalDateAndTime(now, DEFAULT_TIMEZONE);
-  const baseDateObj = new Date(`${todayDateStr}T12:00:00+08:00`);
-
+  // Legacy day offsets and dueDay values were relative to the current Manila day.
+  const {date: today} = toLocalDateAndTime(new Date(), DEFAULT_TIMEZONE);
+  const dayAt = offset => {
+    const date = new Date(`${today}T12:00:00+08:00`);
+    date.setUTCDate(date.getUTCDate() + offset);
+    return toLocalDateAndTime(date, DEFAULT_TIMEZONE).date;
+  };
   const tasks = [];
+  const commitments = [];
   const blocks = [];
+  const validInstant = value => typeof value === 'string' && Number.isFinite(Date.parse(value));
+  const copyWindows = (items, kind) => (Array.isArray(items) ? items : []).flatMap((item, index) => {
+    try {
+      if (!validInstant(item?.startAt) || !validInstant(item?.endAt)) return [];
+      const id = typeof item.id === 'string' && item.id ? item.id : generateId(`migrated_${kind}_${index}`);
+      return kind === 'commitment'
+        ? [createCommitment({id,title:item.title || 'Migrated commitment',startAt:item.startAt,endAt:item.endAt})]
+        : [createWindow({id,startAt:item.startAt,endAt:item.endAt})];
+    } catch { return []; }
+  });
 
   parsedV1.tasks.forEach((oldTask, idx) => {
-    const dayOffset = typeof oldTask.day === 'number' ? oldTask.day : 0;
-    const timeStr = typeof oldTask.time === 'string' && oldTask.time ? oldTask.time : '14:00';
-    const taskDateMs = baseDateObj.getTime() + dayOffset * 24 * 60 * 60 * 1000;
-    const { date: targetDateStr } = toLocalDateAndTime(new Date(taskDateMs), DEFAULT_TIMEZONE);
-    const stableStartAt = parseInTimezone(targetDateStr, timeStr, DEFAULT_TIMEZONE);
-
-    const minutes = typeof oldTask.minutes === 'number' ? oldTask.minutes : 60;
-    const isDone = oldTask.status === 'done';
     const taskId = typeof oldTask.id === 'string' && oldTask.id ? oldTask.id : generateId(`task_${idx}`);
+    const dayOffset = Number.isInteger(oldTask.day) ? oldTask.day : 0;
+    const time = typeof oldTask.time === 'string' && oldTask.time ? oldTask.time : '14:00';
+    const startAt = parseInTimezone(dayAt(dayOffset), time, DEFAULT_TIMEZONE);
+    const sessionMinutes = Math.max(1, typeof oldTask.sessionMinutes === 'number' ? oldTask.sessionMinutes : (oldTask.minutes || 60));
+    if (oldTask.kind === 'fixed') {
+      commitments.push(createCommitment({
+        id:taskId, title:oldTask.title || `Migrated commitment ${idx + 1}`,
+        startAt, endAt:addMinutes(startAt, sessionMinutes)
+      }));
+      return;
+    }
 
-    const newTask = createTask({
-      id: taskId,
-      title: oldTask.title || `Migrated Task ${idx + 1}`,
-      course: oldTask.course || '',
-      dueAt: stableStartAt,
-      remainingMinutes: isDone ? 0 : minutes,
-      status: isDone ? TASK_STATUS.DONE : TASK_STATUS.OPEN,
-      steps: [],
-      sourceText: 'Migrated from v1 storage'
+    const rawMinutes = typeof oldTask.minutes === 'number' ? oldTask.minutes : 60;
+    const isDone = oldTask.status === 'done' || rawMinutes === 0;
+    const dueDay = Number.isInteger(oldTask.dueDay) ? oldTask.dueDay : null;
+    const dueAt = validInstant(oldTask.dueAt)
+      ? new Date(oldTask.dueAt).toISOString()
+      : dueDay === null ? null : parseInTimezone(dayAt(dueDay), '23:59', DEFAULT_TIMEZONE);
+    const task = createTask({
+      id:taskId, title:oldTask.title || `Migrated Task ${idx + 1}`,
+      course:oldTask.course || '', dueAt,
+      remainingMinutes:isDone ? 0 : rawMinutes,
+      status:isDone ? TASK_STATUS.DONE : TASK_STATUS.OPEN,
+      steps:oldTask.step ? [{id:generateId('step'),title:oldTask.step,completed:false,estimatedMinutes:null}] : [],
+      sourceText:'Migrated from v1 storage'
     });
-    tasks.push(newTask);
+    tasks.push(task);
 
-    // Create a corresponding study block for scheduled tasks
-    const blockEndAt = addMinutes(stableStartAt, minutes);
-    blocks.push(createStudyBlock({
-      id: generateId(`blk_${idx}`),
-      taskId,
-      startAt: stableStartAt,
-      endAt: blockEndAt,
-      locked: false,
-      status: isDone ? BLOCK_STATUS.COMPLETED : BLOCK_STATUS.PLANNED,
-      completedMinutes: isDone ? minutes : 0
-    }));
+    // An accepted v1 planner has the authoritative schedule; avoid duplicate blocks.
+    if (!parsedV1.planner?.accepted) {
+      const endAt = addMinutes(startAt, sessionMinutes);
+      blocks.push(createStudyBlock({
+        id:generateId(`blk_${idx}`), taskId, startAt, endAt, locked:false,
+        status:isDone ? BLOCK_STATUS.COMPLETED : BLOCK_STATUS.PLANNED,
+        completedMinutes:isDone ? sessionMinutes : 0
+      }));
+    }
   });
 
-  const migratedState = createAppState({
-    timezone: DEFAULT_TIMEZONE,
-    tasks,
-    commitments: [],
-    availability: [],
-    blocks,
-    history: []
-  });
-
-  // Save migrated v2 state to storage
-  try {
-    storage.setItem(STORAGE_KEY_V2, JSON.stringify(migratedState));
-  } catch (err) {
-    console.warn('WeekBack: Could not persist migrated v2 state:', err);
+  const legacyPlanner = parsedV1.planner || {};
+  commitments.push(...copyWindows(legacyPlanner.commitments, 'commitment'));
+  const availability = copyWindows(legacyPlanner.availability, 'availability');
+  if (legacyPlanner.accepted && Array.isArray(legacyPlanner.blocks)) {
+    legacyPlanner.blocks.forEach((block, index) => {
+      try {
+        if (!tasks.some(task => task.id === block.taskId) || !validInstant(block.startAt) || !validInstant(block.endAt)) return;
+        blocks.push(createStudyBlock({
+          id:typeof block.id === 'string' && block.id ? block.id : generateId(`blk_${index}`),
+          taskId:block.taskId, startAt:block.startAt, endAt:block.endAt,
+          locked:Boolean(block.locked), status:block.status || BLOCK_STATUS.PLANNED,
+          completedMinutes:Number.isFinite(block.completedMinutes) ? block.completedMinutes : 0
+        }));
+      } catch { /* Skip malformed blocks; original v1 data remains backed up. */ }
+    });
   }
 
+  const migratedState = createAppState({timezone:DEFAULT_TIMEZONE,tasks,commitments,availability,blocks,history:[]});
+  try { storage.setItem(STORAGE_KEY_V2, JSON.stringify(migratedState)); }
+  catch (err) { console.warn('WeekBack: Could not persist migrated v2 state:', err); }
   return migratedState;
 }
 
 /**
- * Loads AppState from storage.
- * Handles schema v2, v1 migration with backup, and corrupt data preservation.
- * Demo fixtures load ONLY through an explicit action — never silently seeded.
+ * Loads AppState from storage, migrating v1 data with an untouched backup.
+ * Demo fixtures are never loaded implicitly.
  * @param {object} [customStorage]
  * @returns {import('./model.js').AppState}
  */
@@ -409,14 +424,14 @@ export function undoPlan(state) {
     return { undone: false, state };
   }
 
-  const lastEntry = state.history.pop();
-  if (lastEntry && lastEntry.snapshot) {
-    if (Array.isArray(lastEntry.snapshot.blocks)) {
-      state.blocks = structuredClone(lastEntry.snapshot.blocks);
-    }
-    if (Array.isArray(lastEntry.snapshot.tasks)) {
-      state.tasks = structuredClone(lastEntry.snapshot.tasks);
-    }
+  const lastEntry = state.history.at(-1);
+  if (!lastEntry?.snapshot) return {undone:false,state};
+  state.history.pop();
+  if (Array.isArray(lastEntry.snapshot.blocks)) {
+    state.blocks = structuredClone(lastEntry.snapshot.blocks);
+  }
+  if (Array.isArray(lastEntry.snapshot.tasks)) {
+    state.tasks = structuredClone(lastEntry.snapshot.tasks);
   }
 
   return { undone: true, state, entry: lastEntry };

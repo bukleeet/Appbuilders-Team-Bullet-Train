@@ -75,7 +75,8 @@ test('recording progress clears unsafe plan undo history', () => {
   assert.equal(canUndo(state), true);
   progress(state, { blockId: state.blocks[0].id, completedMinutes: 30 });
   assert.equal(state.tasks[0].remainingMinutes, 170);
-  assert.equal(state.history.length, 0);
+  assert.equal(state.history.length, 1);
+  assert.equal(state.history[0].snapshot, null);
   assert.equal(canUndo(state), false);
   assert.equal(validateAppState(state).valid, true);
 });

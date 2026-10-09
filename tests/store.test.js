@@ -23,7 +23,8 @@ import {
   createStudyBlock,
   createPlanProposal,
   TASK_STATUS,
-  BLOCK_STATUS
+  BLOCK_STATUS,
+  validateAppState
 } from '../src/model.js';
 
 // Helper mock storage implementation for isolated test cases
@@ -87,7 +88,7 @@ test('store.js: quota-error handling surfaces StorageError without crashing', ()
 test('store.js: migration from v1 creates backup and converts to stable schemaVersion 2', () => {
   const rawV1Data = JSON.stringify({
     tasks: [
-      { id: 'math', title: 'Problem Set 4', course: 'MATH 54', minutes: 120, day: 1, time: '14:00', status: 'planned' },
+      { id: 'math', title: 'Problem Set 4', course: 'MATH 54', minutes: 120, day: 1, dueDay: 4, time: '14:00', status: 'planned' },
       { id: 'history', title: 'Essay', course: 'KAS 1', minutes: 60, day: 2, time: '10:00', status: 'done' }
     ],
     previous: null
@@ -114,6 +115,7 @@ test('store.js: migration from v1 creates backup and converts to stable schemaVe
   assert.equal(t1.status, 'open');
   assert.equal(t1.remainingMinutes, 120);
   assert.ok(t1.dueAt.endsWith('Z'));
+  assert.notEqual(t1.dueAt, migrated.blocks.find(b => b.taskId === 'math').startAt);
 
   // Task 2: was done, so remainingMinutes is 0
   const t2 = migrated.tasks.find(t => t.id === 'history');
@@ -299,8 +301,37 @@ test('store.js: demo fixtures load ONLY through an explicit action', () => {
   assert.equal(demoState.commitments.length, 5);
   assert.equal(demoState.availability.length, 7);
   assert.equal(demoState.blocks.length, 3);
+  assert.ok(demoState.blocks.every(block => Date.parse(block.startAt) >= Date.parse('2026-10-12T00:00:00Z')));
 
   // Subsequent load returns the explicitly loaded demo fixtures
   const reloaded = loadState(storage);
   assert.equal(reloaded.tasks.length, 3);
+});
+
+test('v1 migration preserves fixed commitments and accepted planner data', () => {
+  const storage = createMockStorage();
+  const raw = JSON.stringify({
+    tasks: [
+      {id:'study',title:'Study',course:'BIO',minutes:90,day:0,time:'09:00',dueDay:3,status:'planned'},
+      {id:'class',title:'Biology lecture',kind:'fixed',minutes:0,sessionMinutes:60,day:1,time:'10:00',status:'planned'}
+    ],
+    planner: {
+      accepted:true,
+      availability:[{id:'window',startAt:'2026-10-11T01:00:00.000Z',endAt:'2026-10-11T04:00:00.000Z'}],
+      commitments:[{id:'commitment',title:'Lab',startAt:'2026-10-12T01:00:00.000Z',endAt:'2026-10-12T02:00:00.000Z'}],
+      blocks:[{id:'planned',taskId:'study',startAt:'2026-10-11T01:00:00.000Z',endAt:'2026-10-11T02:30:00.000Z',locked:true,status:'planned',completedMinutes:0}]
+    }
+  });
+  const state = migrateV1(raw, storage);
+  assert.equal(storage.getItem(STORAGE_KEY_V1_BACKUP), raw);
+  assert.deepEqual(state.tasks.map(task=>task.id), ['study']);
+  assert.equal(state.commitments.length, 2);
+  assert.equal(state.commitments.find(item=>item.id==='class').title, 'Biology lecture');
+  assert.equal(state.availability.length, 1);
+  assert.equal(state.availability[0].id, 'window');
+  assert.deepEqual(state.blocks.map(block=>block.id), ['planned']);
+  assert.equal(state.blocks[0].locked, true);
+  assert.equal(state.blocks[0].startAt, '2026-10-11T01:00:00.000Z');
+  assert.ok(state.tasks[0].dueAt.endsWith('Z'));
+  assert.equal(validateAppState(state).valid, true);
 });

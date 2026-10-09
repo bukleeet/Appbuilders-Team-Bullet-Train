@@ -106,7 +106,7 @@ The test suite covers:
 - **Ask Waypoint supports task capture, not conversational schedule changes.** Draft deadlines must be reviewed. Explicit named Manila calendar deadlines are normalized deterministically; other language relies on model interpretation.
 - **AI responses are slow on CPU** (see above).
 - **The sample week is anchored to Monday.** Late in the week most sample deadlines have already passed, so recovery reports them as unschedulable.
-- **v1 migration is basic.** v1 fixed commitments become tasks, and v1 planner availability is not carried over.
+- **v1 migration is basic.** v1 fixed commitments, saved availability, commitments, accepted study blocks and task deadlines are carried into v2. Malformed individual legacy planner entries are skipped; the untouched v1 backup remains available.
 - **Single device only.** Data lives in one browser; use export/import to move it.
 
 UI icons are bundled locally from [Lucide](https://lucide.dev); the license is in `public/icons/LICENSE`.
