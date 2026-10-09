@@ -1,13 +1,112 @@
-# WeekBack
+# Waypoint
 
-Run `npm start`, then open http://localhost:3000. No dependencies or remote fonts required.
+A local-first weekly study planner for students. Tasks, deadlines and study sessions stay in the browser. A deterministic scheduler fits work into the study time you enter. An optional local AI model (via Ollama) turns a typed sentence into a task draft. There are no accounts and no cloud sync.
 
-Initial UI: Today timeline/list, timed Week grid and details drawer, Tasks, Settings, manual task entry/editing, local saving, partial progress, recovery preview and undo. AI and automatic scheduling are pending; manual recovery proposals are labeled. No cloud sync.
+> The project started as **WeekBack**. Code, the npm package name and the browser storage keys (`weekback-*`) still use that name.
 
-Code boundaries: src/store.js (data), src/app.js (UI), src/styles.css (design).
+## Quick start
 
-Week → Manage study plan & recovery connects the pure scheduler through a temporary v1 adapter in src/planner-ui.js. Enter dated availability and fixed commitments, preview planning or repair, inspect changes/shortages, then accept or cancel. Accepted sessions appear in Week and persist locally; manage session locks and progress in the planner dialog. Undo restores the last accepted plan and is cleared after progress changes. Run `npm test` for scheduler checks.
+Requires Node.js 20.3 or newer (developed on Node 25).
 
-Integration limitations: Today still uses legacy manual sessions, and legacy task dates still shift on later-day reloads. Person 3's stable timestamp model and persistence helpers must replace the adapter before full end-to-end completion. Local AI remains unavailable.
+```sh
+npm install
+npm start          # http://localhost:3000  (set PORT to change)
+```
 
-Existing saved tasks are preserved. To inspect the full sample design, choose Settings → Load sample week after exporting any data you want to keep. UI icons are bundled locally from Lucide; the license is in public/icons/LICENSE.
+The planner works fully without AI. To try it with sample data, open **Settings → Load sample week**.
+
+### Optional: local AI
+
+1. Install a recent [Ollama](https://ollama.com). Older builds cannot load Qwen 3.5.
+2. `ollama pull qwen3.5:2b`
+3. Keep Ollama running on `127.0.0.1:11434`, then `npm start`.
+
+The server talks to Ollama only over loopback. Without Ollama, the AI endpoints report "unavailable" and manual entry keeps working. The AI is not yet connected to the UI (see [Limitations](#limitations)).
+
+## Using it
+
+- **Tasks** hold the work: title, course, remaining minutes, optional deadline and next step.
+- **Week → Manage study plan & recovery:**
+  - Enter dated study availability and fixed commitments in Philippine time.
+  - *Preview plan*, review the proposed sessions and anything that could not fit, then accept or cancel.
+- **Progress:** mark a session *Done*, *Partial* (minutes completed) or *Missed* from Today, the Week drawer or the planner. Remaining work updates once per session; repeated clicks don't subtract twice.
+- **Recovery:** *Missed* or *Preview recovery* proposes how to reschedule the remaining work. Nothing changes until you accept. *Undo* restores the previous plan. It is cleared once new progress is recorded, so undo never erases progress.
+- **Locks:** a locked session is never moved by planning or recovery.
+- **Backups:** Settings → *Export JSON backup* / *Import backup*. Imports are validated, and a bad file leaves your data untouched.
+
+### Scheduling rules
+
+The scheduler (`src/scheduler.js`) is a pure function with no I/O:
+
+- It uses only the availability you entered. It never invents time.
+- Earliest deadline first; tasks without a deadline go last.
+- Sessions fall on a 15-minute grid, last 30–120 minutes, and have a 15-minute gap between them.
+- It never overlaps fixed commitments, never moves locked or finished sessions, and never ends a session after its deadline.
+- Work that doesn't fit is reported with the exact minutes and a reason (e.g. *Not enough study time before the deadline*).
+
+## Data
+
+- Stored in `localStorage` under `weekback-v2` (schema version 2). All times are UTC instants, displayed in Asia/Manila, so dates don't shift when the app is reopened on a later day.
+- Data from the earlier v1 UI is migrated automatically on first load. The original is kept under `weekback-v1-backup`.
+- Unreadable or invalid saved data is preserved under `weekback-corrupt-<timestamp>` instead of being overwritten.
+- Save failures (e.g. storage full) are shown in the UI with a prompt to export a backup.
+
+## Architecture
+
+| Area | Files |
+|---|---|
+| Data model, dates, persistence, sample data | `src/model.js`, `src/dates.js`, `src/store.js`, `src/fixtures.js` |
+| Scheduler | `src/scheduler.js` |
+| UI | `src/app.js`, `src/planner-ui.js`, `src/assistant-ui.js`, `src/styles.css`, `index.html` |
+| Local server and AI | `server.js`, `server/ai.js`, browser client `src/ai-client.js` |
+
+`server.js` serves only app assets: `/`, `/index.html`, `/src/**`, `/public/**`. Everything else, including server code, `package.json`, tests, `node_modules` and `.git`, is refused. It also exposes:
+
+| Endpoint | Purpose | Responses |
+|---|---|---|
+| `GET /api/ai/status` | Probe Ollama | `200 {available, models}`, `503` when not running |
+| `POST /api/ai/interpret` `{text, context}` | Typed task → `TaskDraft` | `200` draft (+ `x-model-used`, `x-latency-ms`), `400` bad request, `413` too large, `502` unreadable model output, `503` Ollama offline, `504` timeout (45 s) |
+
+A `TaskDraft` never writes calendar data. Missing course, deadline or duration stay `null` and are listed in `missingFields`. Durations come from the text only (e.g. "2h", "45 mins"). A model-guessed duration is returned as a warning, not a value.
+
+## Testing
+
+```sh
+npm test           # node --test tests/*.test.js
+npm run check      # syntax check of all modules
+```
+
+The test suite covers:
+
+- the scheduler: deadlines, locks, gaps, capacity shortfalls, partial progress, invalid dates, repair, determinism and immutability
+- the data layer: round-trip, migration, corrupt data, quota errors, undo
+- the UI's data helpers
+- the AI endpoints with a mocked Ollama: malformed output, absent model, timeout, cancellation
+
+## Measured results
+
+- **Automated tests:** 84/84 pass (`npm test`).
+- **Browser walkthrough** (headless Chrome, zero page errors):
+  - sample week, add task, plan, accept
+  - Missed → recovery → accept → undo
+  - partial progress, reload (data unchanged)
+  - export/import, v1 migration
+  - 390 px mobile width with no horizontal scroll
+- **Local AI latency, measured on CPU** with `think: false`:
+
+  | Model | First request (cold) | Later requests (warm) | Relative dates ("tomorrow 3pm", "Friday 11:59pm", "next Monday") |
+  |---|---|---|---|
+  | `qwen3.5:2b` (default) | ~25–35 s | ~11–16 s | All correct |
+  | `qwen3.5:0.8b` | — | ~8–10 s | Wrong in 3 of 3 cases |
+
+  A GPU or Apple Silicon machine should be several times faster. Those numbers have not been measured yet.
+
+## Limitations
+
+- **Local AI is not connected to the UI yet.** Quick capture in *Add Task* and the *Ask Waypoint* page are placeholders, and the AI status pill is not yet probed. Tracked in #9.
+- **AI responses are slow on CPU** (see above).
+- **The sample week is anchored to Monday.** Late in the week most sample deadlines have already passed, so recovery reports them as unschedulable.
+- **v1 migration is basic.** v1 fixed commitments become tasks, and v1 planner availability is not carried over.
+- **Single device only.** Data lives in one browser; use export/import to move it.
+
+UI icons are bundled locally from [Lucide](https://lucide.dev); the license is in `public/icons/LICENSE`.
