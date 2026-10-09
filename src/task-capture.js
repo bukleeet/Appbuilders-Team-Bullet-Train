@@ -1,6 +1,7 @@
 import {interpretTask} from './ai-client.js';
 import {toLocalDateAndTime,parseInTimezone} from './dates.js';
 import {createTask} from './model.js';
+import {saveTaskEdit} from './ui-mutations.js';
 import {reviewEstimate} from './task-draft-ui.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function showTaskForm(app,state,persist,ai,task=null,initialText=''){
@@ -20,6 +21,6 @@ try{const result=await interpretTask(text,{currentDate:new Date().toISOString(),
       finally{if(dialog.isConnected){dialog.querySelector('[data-interpret]').disabled=!ai.ready;dialog.querySelector('[data-cancel]').hidden=true;dialog.querySelector('[data-save]').disabled=false;}controller=null;}
     }
   });
-form.addEventListener('submit',e=>{e.preventDefault();e.stopPropagation();if(controller)return;try{const f=new FormData(form),minutes=Number(f.get('minutes'));const editedStep=f.get('step').trim();const nextSteps=steps.map(s=>({...s}));if(editedStep){if(nextSteps.length)nextSteps[0].title=editedStep;else nextSteps.push({title:editedStep});}else if(nextSteps.length)nextSteps.shift();const t=createTask({id:task?.id,title:f.get('title'),course:f.get('course'),remainingMinutes:minutes,status:minutes===0?'done':'open',dueAt:f.get('dueDate')?parseInTimezone(f.get('dueDate'),f.get('dueTime')||'23:59'):null,steps:nextSteps,sourceText:sourceText||dialog.querySelector('#capture-text').value.trim()});if(task)state.tasks=state.tasks.map(item=>item.id===task.id?t:item);else state.tasks.push(t);dialog.close();persist('Task saved. Open Week to preview a study plan.');}catch(error){dialog.querySelector('#form-error').textContent=error.message;}});
+form.addEventListener('submit',e=>{e.preventDefault();e.stopPropagation();if(controller)return;try{const f=new FormData(form),minutes=Number(f.get('minutes'));const editedStep=f.get('step').trim();const nextSteps=steps.map(s=>({...s}));if(editedStep){if(nextSteps.length)nextSteps[0].title=editedStep;else nextSteps.push({title:editedStep});}else if(nextSteps.length)nextSteps.shift();const t=createTask({id:task?.id,title:f.get('title'),course:f.get('course'),remainingMinutes:minutes,status:minutes===0?'done':'open',dueAt:f.get('dueDate')?parseInTimezone(f.get('dueDate'),f.get('dueTime')||'23:59'):null,steps:nextSteps,sourceText:sourceText||dialog.querySelector('#capture-text').value.trim()});saveTaskEdit(state,t);dialog.close();persist('Task saved. Open Week to preview a study plan.');}catch(error){dialog.querySelector('#form-error').textContent=error.message;}});
   dialog.showModal();field('title').focus();
 }

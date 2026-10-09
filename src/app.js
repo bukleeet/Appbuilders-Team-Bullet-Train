@@ -1,4 +1,5 @@
-import {loadState,saveState,exportState,importState,loadDemoFixtures,recordProgress} from './store.js';
+import {recordSessionProgress} from './ui-mutations.js';
+import {loadState,saveState,exportState,importState,loadDemoFixtures} from './store.js';
 import {formatDate,formatTime,formatDateTime,toLocalDateAndTime,parseInTimezone,diffMinutes} from './dates.js';
 import {getAIStatus} from './ai-client.js';
 import {openPlanner} from './integrated-planner.js';
@@ -37,7 +38,7 @@ app.addEventListener('click',e=>{const d=e.target.closest('button')?.dataset;if(
  else if(d.edit&&task(d.edit))showTaskForm(app,state,persist,ai,task(d.edit));
  else if('probe'in d)probe();
  else if('planner'in d||d.session)openPlanner(app,state,persist,d.session);
- else if(d.done||d.missed){recordProgress(state,{blockId:d.done||d.missed,status:d.done?'completed':'missed'});persist('Session progress saved.');}
+ else if(d.done||d.missed){recordSessionProgress(state,{blockId:d.done||d.missed,status:d.done?'completed':'missed'});persist('Session progress saved.');}
  else if(d.week){weekMode=d.week;render();}
  else if(d.agenda){if(agendaMode===d.agenda)return;const items=app.querySelector('.agenda-items'),before=new Map([...items.querySelectorAll('.agenda-card')].map(c=>[c,c.getBoundingClientRect()]));agendaMode=d.agenda;items.classList.toggle('timeline',agendaMode==='timeline');items.classList.toggle('list',agendaMode==='list');app.querySelectorAll('[data-agenda]').forEach(b=>b.classList.toggle('chosen',b.dataset.agenda===agendaMode));if(!matchMedia('(prefers-reduced-motion: reduce)').matches)before.forEach((r,c)=>{const n=c.getBoundingClientRect();c.animate([{transform:`translate(${r.left-n.left}px,${r.top-n.top}px) scaleX(${r.width/n.width})`},{transform:'none'}],{duration:220,easing:'ease-out'});});}
  else if(d.delete)confirmAction('Delete task?','Its study sessions and plan history will also be removed.',()=>{state.tasks=state.tasks.filter(t=>t.id!==d.delete);state.blocks=state.blocks.filter(b=>b.taskId!==d.delete);state.history=[];persist('Task deleted.');});

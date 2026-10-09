@@ -1,5 +1,6 @@
+import {recordSessionProgress} from './ui-mutations.js';
 import {planWeek,repairPlan} from './scheduler.js';
-import {acceptPlan,undoPlan,recordProgress} from './store.js';
+import {acceptPlan,undoPlan} from './store.js';
 import {parseInTimezone,formatDateTime,diffMinutes} from './dates.js';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function openPlanner(app,state,persist,selectedId){
@@ -19,8 +20,8 @@ export function openPlanner(app,state,persist,selectedId){
     else if('accept'in d){acceptPlan(state,proposal);save('Study plan accepted.');}
     else if('undo'in d){undoPlan(state);save('Previous plan restored.');}
     else if(d.lock){const b=state.blocks.find(b=>b.id===d.lock);b.locked=!b.locked;save('Session lock updated.');}
-    else if(d.partial){const b=state.blocks.find(b=>b.id===d.partial),t=state.tasks.find(t=>t.id===b.taskId);const maximum=Math.min(diffMinutes(b.startAt,b.endAt),b.completedMinutes+t.remainingMinutes);if(maximum<=b.completedMinutes)return;body.innerHTML=`<button type="button" data-back>Back to study plan</button><h2>Record progress</h2><form id="progress-form"><label>Total minutes completed in this session<input name="minutes" type="number" min="${b.completedMinutes+1}" max="${maximum}" required></label><button class="primary">Save progress</button></form>`;body.querySelector('form').addEventListener('submit',event=>{event.preventDefault();event.stopPropagation();recordProgress(state,{blockId:b.id,completedMinutes:Number(new FormData(event.target).get('minutes')),status:'partially_completed'});save('Progress saved.');});}
-    else if(d.done||d.missed){recordProgress(state,{blockId:d.done||d.missed,status:d.done?'completed':'missed'});save('Progress saved. Preview recovery for remaining work.');}
+    else if(d.partial){const b=state.blocks.find(b=>b.id===d.partial),t=state.tasks.find(t=>t.id===b.taskId);const maximum=Math.min(diffMinutes(b.startAt,b.endAt),b.completedMinutes+t.remainingMinutes);if(maximum<=b.completedMinutes)return;body.innerHTML=`<button type="button" data-back>Back to study plan</button><h2>Record progress</h2><form id="progress-form"><label>Total minutes completed in this session<input name="minutes" type="number" min="${b.completedMinutes+1}" max="${maximum}" required></label><button class="primary">Save progress</button></form>`;body.querySelector('form').addEventListener('submit',event=>{event.preventDefault();event.stopPropagation();recordSessionProgress(state,{blockId:b.id,completedMinutes:Number(new FormData(event.target).get('minutes')),status:'partially_completed'});save('Progress saved.');});}
+    else if(d.done||d.missed){recordSessionProgress(state,{blockId:d.done||d.missed,status:d.done?'completed':'missed'});save('Progress saved. Preview recovery for remaining work.');}
   });
   dialog.addEventListener('close',()=>{dialog.remove();persist('',true);});render();dialog.showModal();if(selectedId){const card=body.querySelector(`[data-block="${CSS.escape(selectedId)}"]`);card?.scrollIntoView({block:'center'});card?.focus();}
 }
