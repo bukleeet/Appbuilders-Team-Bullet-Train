@@ -20,6 +20,19 @@ dialog{padding:0;border:1px solid #e5edf3;border-radius:10px;width:min(900px,94v
 .calendar-block>strong{line-height:1.3;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .calendar-block>small{line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 
+.assistant-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(240px,1fr);gap:24px}
+.assistant-empty{padding:32px 20px;background:var(--pale);border-radius:5px;line-height:1.6}
+.assistant-empty>.icon{width:30px;height:30px;margin-bottom:16px}
+.assistant-empty p{max-width:560px;color:#53616c}
+.assistant-prompts{display:grid;gap:8px;margin:24px 0}
+.assistant-prompts .soft{text-align:left;justify-content:flex-start}
+.assistant-composer{display:flex;align-items:center;gap:20px;margin-top:14px}
+.assistant-composer small{color:#62707a;line-height:1.5;flex:1}
+.assistant-context{align-self:start;line-height:1.7}
+.assistant-context .eyebrow{font-size:10px}
+@media(max-width:1000px){.assistant-layout{grid-template-columns:1fr}}
+@media(max-width:700px){.sidebar-bottom{display:block;padding:8px 0}.sidebar-bottom .local-note{display:none}.profile{width:100%}.assistant-empty{padding:20px}.assistant-empty .actions{flex-wrap:wrap}.assistant-composer{align-items:flex-start}.assistant-chat .panel-title{flex-wrap:wrap}}
+
 #planner-dialog .panel-title{position:sticky;top:0;z-index:2;background:white;padding:12px 0;border-bottom:1px solid #dce5ec}
 #planner-dialog .inset button,#planner-dialog button[data-remove],#planner-dialog button[data-close],#planner-dialog button[data-back]{background:#fff;border:1px solid #d4dfe7;padding:8px 12px;margin:4px 4px 4px 0;min-height:36px}
 #planner-dialog .actions{flex-wrap:wrap}
