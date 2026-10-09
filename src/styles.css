@@ -24,7 +24,7 @@ dialog{padding:0;border:1px solid #e5edf3;border-radius:10px;width:min(900px,94v
 @keyframes dialog-arrive{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @keyframes backdrop-arrive{from{opacity:0}to{opacity:1}}
 @keyframes drawer-arrive{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
-main>h1,main>.hero,main>.today-columns,main>.week-summary,main>.calendar,main>.assistant-layout,main>.settings-grid,main>.task-table,main>.recovery-shell{animation:page-arrive .24s ease-out both}
+.agenda-card{transform-origin:left top}
 dialog[open]{animation:dialog-arrive .2s ease-out both}
 dialog[open]::backdrop,.drawer-backdrop{animation:backdrop-arrive .18s ease-out both}
 .detail-drawer{animation:drawer-arrive .22s ease-out both}
