@@ -339,6 +339,7 @@ export async function interpretTask(text, context = {}, { signal, timeoutMs, url
       system: systemPrompt,
       format: 'json',
       stream: false,
+      think: false,
       options: {
         temperature: 0.1
       }

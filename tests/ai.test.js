@@ -92,6 +92,7 @@ test('Successful extraction: mock valid Ollama JSON response, verify fields, x-m
       const parsedBody = JSON.parse(body);
       assert.equal(parsedBody.format, 'json');
       assert.equal(parsedBody.stream, false);
+      assert.equal(parsedBody.think, false);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
