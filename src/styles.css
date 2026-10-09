@@ -14,5 +14,10 @@ dialog{padding:0;border:1px solid #e5edf3;border-radius:10px;width:min(900px,94v
 .agenda-row.complete:first-child .agenda-card{background:var(--pale);border:0}
 .calendar{margin-left:40px;margin-right:40px}
 @media(max-width:1000px){.calendar{margin-left:0;margin-right:0}}
+
+/* Keep short calendar blocks readable when titles wrap. */
+.calendar-block{padding:8px;gap:4px}
+.calendar-block>strong{line-height:1.3;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.calendar-block>small{line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 #confirmation-dialog{padding:28px;width:440px}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
