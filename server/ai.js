@@ -387,9 +387,9 @@ export async function interpretTask(text, context = {}, { signal, timeoutMs, url
     const timezone = context.timezone || DEFAULT_TIMEZONE;
     const explicitDuration = parseExplicitDuration(text);
 
-    const title = typeof rawDraft.title === 'string' && rawDraft.title.trim()
+    const title = typeof rawDraft.title === 'string'
       ? rawDraft.title.trim()
-      : text.trim();
+      : rawDraft.title;
 
     const course = typeof rawDraft.course === 'string' && rawDraft.course.trim()
       ? rawDraft.course.trim()
@@ -405,9 +405,9 @@ export async function interpretTask(text, context = {}, { signal, timeoutMs, url
       estimatedMinutes = null;
     }
 
-    // Steps normalization: decompose into 2-4 concrete steps
-    let steps = [];
-    if (Array.isArray(rawDraft.steps) && rawDraft.steps.length > 0) {
+    // Steps normalization: decompose into 2-4 concrete steps if array
+    let steps;
+    if (Array.isArray(rawDraft.steps)) {
       steps = rawDraft.steps
         .filter((s) => s && typeof s === 'object')
         .map((s, idx) => ({
@@ -416,16 +416,18 @@ export async function interpretTask(text, context = {}, { signal, timeoutMs, url
             ? Math.round(s.estimatedMinutes)
             : (estimatedMinutes ? Math.round(estimatedMinutes / Math.max(1, rawDraft.steps.length)) : 30)
         }));
-    }
 
-    if (steps.length < 2) {
-      const stepMins = estimatedMinutes ? Math.round(estimatedMinutes / 2) : 30;
-      steps = [
-        { title: `Prepare and begin ${title}`, estimatedMinutes: stepMins },
-        { title: `Complete and review ${title}`, estimatedMinutes: stepMins }
-      ];
-    } else if (steps.length > 4) {
-      steps = steps.slice(0, 4);
+      if (steps.length < 2) {
+        const stepMins = estimatedMinutes ? Math.round(estimatedMinutes / 2) : 30;
+        steps = [
+          { title: `Prepare and begin ${title || 'task'}`, estimatedMinutes: stepMins },
+          { title: `Complete and review ${title || 'task'}`, estimatedMinutes: stepMins }
+        ];
+      } else if (steps.length > 4) {
+        steps = steps.slice(0, 4);
+      }
+    } else {
+      steps = rawDraft.steps;
     }
 
     // Synchronize missingFields strictly with actual field presence

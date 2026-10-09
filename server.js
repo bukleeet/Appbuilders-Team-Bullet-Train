@@ -154,7 +154,7 @@ export function createServer({
         const context = body.context && typeof body.context === 'object' ? body.context : {};
 
         const clientController = new AbortController();
-        req.on('close', () => {
+        res.on('close', () => {
           if (!res.writableEnded) {
             clientController.abort();
           }
