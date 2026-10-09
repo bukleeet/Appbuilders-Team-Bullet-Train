@@ -1,5 +1,6 @@
 import { planWeek, repairPlan } from './scheduler.js';
-import { acceptPlan, undoPlan, recordProgress } from './store.js';
+import { acceptPlan, undoPlan } from './store.js';
+import {recordSessionProgress} from './ui-mutations.js';
 import { createWindow, createCommitment, BLOCK_STATUS } from './model.js';
 import { parseInTimezone, toLocalDateAndTime, diffMinutes } from './dates.js';
 
@@ -43,8 +44,7 @@ export function sessionItems(state, origin) {
 
 // Progress changes tasks and blocks after a plan was accepted, so older undo snapshots would silently erase it.
 export function progress(state, data) {
-  recordProgress(state, data);
-  for (const entry of state.history) entry.snapshot = null;
+  recordSessionProgress(state, data);
 }
 export const canUndo = state => Boolean(state.history.at(-1)?.snapshot);
 
@@ -84,14 +84,14 @@ export function showPlanner(app, state, persist, selectedId=null) {
     if('close'in d)dialog.close();
     else if('back'in d)render();
     else if(d.remove){state[d.kind]=state[d.kind].filter(w=>w.id!==d.remove);save('Planning window removed.');}
-    else if('plan'in d||'repair'in d){proposal=('repair'in d?repairPlan:planWeek)(state);render();}
+    else if('plan'in d||'repair'in d){proposal=('repair'in d?repairPlan:planWeek)(state,{now:new Date().toISOString()});render();}
     else if('cancel'in d){proposal=null;render();}
     else if('accept'in d&&proposal){acceptPlan(state,proposal,'plan');save('Study plan accepted.');}
     else if('undo'in d&&canUndo(state)){undoPlan(state);save('Previous study plan restored.');}
     else if(d.lock){const b=state.blocks.find(b=>b.id===d.lock);b.locked=!b.locked;save('Session lock updated.');}
-    else if(d.partial){const b=state.blocks.find(b=>b.id===d.partial);const maximum=diffMinutes(b.startAt,b.endAt);body.innerHTML=`<button type="button" data-back>Back to study plan</button><h2>Record progress</h2><form id="progress-form"><label>Minutes completed in this session<input name="minutes" type="number" min="1" max="${maximum}" required></label><button class="primary">Save progress</button></form>`;body.querySelector('form').addEventListener('submit',event=>{event.preventDefault();event.stopPropagation();progress(state,{blockId:b.id,completedMinutes:Number(new FormData(event.target).get('minutes'))});save('Session progress saved. Preview recovery to schedule remaining work.');});}
+    else if(d.partial){const b=state.blocks.find(b=>b.id===d.partial);const t=state.tasks.find(t=>t.id===b.taskId),maximum=Math.min(diffMinutes(b.startAt,b.endAt),b.completedMinutes+t.remainingMinutes);if(maximum<=b.completedMinutes)return;body.innerHTML=`<button type="button" data-back>Back to study plan</button><h2>Record progress</h2><form id="progress-form"><label>Minutes completed in this session<input name="minutes" type="number" min="${b.completedMinutes+1}" max="${maximum}" required></label><button class="primary">Save progress</button></form>`;body.querySelector('form').addEventListener('submit',event=>{event.preventDefault();event.stopPropagation();progress(state,{blockId:b.id,completedMinutes:Number(new FormData(event.target).get('minutes')),status:BLOCK_STATUS.PARTIALLY_COMPLETED});save('Session progress saved. Preview recovery to schedule remaining work.');});}
     else if(d.done){progress(state,{blockId:d.done,status:BLOCK_STATUS.COMPLETED});save('Session marked done.');}
-    else if(d.missed){progress(state,{blockId:d.missed,completedMinutes:0,status:BLOCK_STATUS.MISSED});save('Session marked missed. Preview recovery to reschedule it.');}
+    else if(d.missed){progress(state,{blockId:d.missed,status:BLOCK_STATUS.MISSED});save('Session marked missed. Preview recovery to reschedule it.');}
   });
   dialog.setAttribute('aria-label','Study plan');
   dialog.addEventListener('close',()=>{dialog.remove();persist('',true);});render();dialog.showModal();

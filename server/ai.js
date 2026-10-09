@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { explicitManilaDeadline } from './deadline.js';
 export const DEFAULT_MODEL = 'qwen3.5:2b';
 export const DEFAULT_TIMEZONE = 'Asia/Manila';
 export const DEFAULT_TIMEOUT_MS = 45_000;
@@ -416,7 +417,7 @@ export async function interpretTask(text, context = {}, { signal, timeoutMs, url
       ? rawDraft.course.trim()
       : null;
 
-    const dueAt = normalizeDueAt(rawDraft.dueAt, timezone);
+    const dueAt = explicitManilaDeadline(text, context) || normalizeDueAt(rawDraft.dueAt, timezone);
 
     let estimatedMinutes = null;
     const warnings = Array.isArray(rawDraft.warnings)

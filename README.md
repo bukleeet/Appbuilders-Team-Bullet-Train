@@ -21,7 +21,7 @@ The planner works fully without AI. To try it with sample data, open **Settings 
 2. `ollama pull qwen3.5:2b`
 3. Keep Ollama running on `127.0.0.1:11434`, then `npm start`.
 
-The server talks to Ollama only over loopback. Without Ollama, the AI endpoints report "unavailable" and manual entry keeps working. The AI is not yet connected to the UI (see [Limitations](#limitations)).
+The server talks to Ollama only over loopback. Without Ollama, the AI endpoints report "unavailable" and manual entry keeps working. Add Task and Ask Waypoint probe readiness and interpret descriptions into editable drafts. Missing fields stay blank; model-guessed effort is offered separately. Cancel stops the request, and manual entry remains available.
 
 ## Using it
 
@@ -30,7 +30,7 @@ The server talks to Ollama only over loopback. Without Ollama, the AI endpoints 
   - Enter dated study availability and fixed commitments in Philippine time.
   - *Preview plan*, review the proposed sessions and anything that could not fit, then accept or cancel.
 - **Progress:** mark a session *Done*, *Partial* (minutes completed) or *Missed* from Today, the Week drawer or the planner. Remaining work updates once per session; repeated clicks don't subtract twice.
-- **Recovery:** *Missed* or *Preview recovery* proposes how to reschedule the remaining work. Nothing changes until you accept. *Undo* restores the previous plan. It is cleared once new progress is recorded, so undo never erases progress.
+- **Recovery:** *Missed* or *Preview recovery* proposes how to reschedule the remaining work. Nothing changes until you accept. *Undo* restores the previous plan. It is cleared once a task is added/edited or new progress is recorded, so undo never erases progress.
 - **Locks:** a locked session is never moved by planning or recovery.
 - **Backups:** Settings → *Export JSON backup* / *Import backup*. Imports are validated, and a bad file leaves your data untouched.
 
@@ -57,7 +57,7 @@ The scheduler (`src/scheduler.js`) is a pure function with no I/O:
 |---|---|
 | Data model, dates, persistence, sample data | `src/model.js`, `src/dates.js`, `src/store.js`, `src/fixtures.js` |
 | Scheduler | `src/scheduler.js` |
-| UI | `src/app.js`, `src/planner-ui.js`, `src/assistant-ui.js`, `src/styles.css`, `index.html` |
+| UI | `src/app.js`, `src/planner-ui.js`, `src/assistant-ui.js`, `src/task-capture.js`, `src/task-draft-ui.js`, `src/ui-mutations.js`, `src/styles.css`, `index.html` |
 | Local server and AI | `server.js`, `server/ai.js`, browser client `src/ai-client.js` |
 
 `server.js` serves only app assets: `/`, `/index.html`, `/src/**`, `/public/**`. Everything else, including server code, `package.json`, tests, `node_modules` and `.git`, is refused. It also exposes:
@@ -85,7 +85,7 @@ The test suite covers:
 
 ## Measured results
 
-- **Automated tests:** 84/84 pass (`npm test`).
+- **Automated tests:** run `npm test` for current results.
 - **Browser walkthrough** (headless Chrome, zero page errors):
   - sample week, add task, plan, accept
   - Missed → recovery → accept → undo
@@ -99,11 +99,11 @@ The test suite covers:
   | `qwen3.5:2b` (default) | ~25–35 s | ~11–16 s | All correct |
   | `qwen3.5:0.8b` | — | ~8–10 s | Wrong in 3 of 3 cases |
 
-  A GPU or Apple Silicon machine should be several times faster. Those numbers have not been measured yet.
+  A separate local walkthrough measured a 2B interpretation at 23.2 seconds and one request timed out after 45 seconds. These measurements use different environments and are not a controlled comparison.
 
 ## Limitations
 
-- **Local AI is not connected to the UI yet.** Quick capture in *Add Task* and the *Ask Waypoint* page are placeholders, and the AI status pill is not yet probed. Tracked in #9.
+- **Ask Waypoint supports task capture, not conversational schedule changes.** Draft deadlines must be reviewed. Explicit named Manila calendar deadlines are normalized deterministically; other language relies on model interpretation.
 - **AI responses are slow on CPU** (see above).
 - **The sample week is anchored to Monday.** Late in the week most sample deadlines have already passed, so recovery reports them as unschedulable.
 - **v1 migration is basic.** v1 fixed commitments become tasks, and v1 planner availability is not carried over.
