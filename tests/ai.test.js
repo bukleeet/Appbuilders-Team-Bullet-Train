@@ -10,7 +10,8 @@ import {
   ModelOutputError,
   TaskDraftSchema,
   DEFAULT_MODEL,
-  DEFAULT_TIMEZONE
+  DEFAULT_TIMEZONE,
+  parseExplicitDuration
 } from '../server/ai.js';
 
 /**
@@ -533,3 +534,75 @@ test('Unit test: interpretTask validates input and respects upstream cancellatio
     await mockOllamaHanging.close();
   }
 });
+
+test('Unit test: parseExplicitDuration accurately distinguishes effort from deadlines and course codes', () => {
+  assert.equal(parseExplicitDuration('Submit CS 150 MP2, due in 3 hours'), null);
+  assert.equal(parseExplicitDuration('Read MATH 2h notes due Monday'), null);
+  assert.equal(parseExplicitDuration('Review CS 150 MP2 for 1.5 hours, due in 3 hours'), 90);
+  assert.equal(parseExplicitDuration('Read chapter 4 for 2h'), 120);
+  assert.equal(parseExplicitDuration('Study for half an hour'), 30);
+  assert.equal(parseExplicitDuration('Quick review for 45 mins'), 45);
+  assert.equal(parseExplicitDuration('Project work 1 hr 30 min'), 90);
+});
+
+test('Unit test: interpretTask defaults omitted steps to [] without inventing steps', async () => {
+  const mockOllama = await createMockOllama((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        model: 'llama3.2:1b',
+        response: JSON.stringify({
+          title: 'Single-action quick task',
+          course: 'CS 101',
+          dueAt: null,
+          estimatedMinutes: null,
+          missingFields: ['dueAt', 'estimatedMinutes'],
+          warnings: []
+        })
+      })
+    );
+  });
+
+  try {
+    const result = await interpretTask('Single-action quick task', {}, {
+      url: `${mockOllama.url}/api/generate`
+    });
+    assert.deepEqual(result.draft.steps, []);
+    assert.equal(result.draft.estimatedMinutes, null);
+    assert.ok(result.draft.missingFields.includes('estimatedMinutes'));
+  } finally {
+    await mockOllama.close();
+  }
+});
+
+test('Unit test: interpretTask flags model-suggested estimate in warnings when text has no duration', async () => {
+  const mockOllama = await createMockOllama((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        model: 'llama3.2:1b',
+        response: JSON.stringify({
+          title: 'Read chapter without duration',
+          course: 'BIO 10',
+          dueAt: null,
+          estimatedMinutes: 45,
+          steps: [],
+          missingFields: [],
+          warnings: []
+        })
+      })
+    );
+  });
+
+  try {
+    const result = await interpretTask('Read chapter without duration', {}, {
+      url: `${mockOllama.url}/api/generate`
+    });
+    assert.equal(result.draft.estimatedMinutes, null, 'Must keep estimatedMinutes null per strict nulls contract');
+    assert.ok(result.draft.missingFields.includes('estimatedMinutes'));
+    assert.ok(result.draft.warnings.some((w) => w.includes('Model estimated 45 minutes')));
+  } finally {
+    await mockOllama.close();
+  }
+});
+

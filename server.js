@@ -45,9 +45,16 @@ export function isDeniedPath(pathname, filePath) {
   // Explicitly deny archive and backup files (*.zip, *.tar, *.gz, *.bak)
   if (/\.(zip|tar|gz|bak)$/i.test(normPath)) return true;
 
+  // Explicitly deny server source, tests, node_modules, and package manifests
+  if (/(?:^|\/)(server|tests|node_modules)(?:\/|$)/i.test(normPath)) return true;
+  if (/(?:^|\/)package(?:-lock)?\.json$/i.test(normPath)) return true;
+
   if (filePath) {
     const base = path.basename(filePath).toLowerCase();
     if (base === '.git' || base.startsWith('.env') || /\.(zip|tar|gz|bak)$/i.test(base)) {
+      return true;
+    }
+    if (base === 'package.json' || base === 'package-lock.json') {
       return true;
     }
   }
@@ -232,13 +239,19 @@ export function createServer({
       return;
     }
 
-    // 1. Enforce static asset allowlist (blocks server files, package.json, tests, node_modules, .git, archives)
-    if (!isAllowedStaticPath(pathname)) {
+    // 1. Explicitly deny sensitive patterns with 403 Forbidden
+    if (isDeniedPath(pathname)) {
       res.writeHead(403, { 'Content-Type': 'text/plain' }).end('Forbidden');
       return;
     }
 
-    // 2. Resolve target file
+    // 2. Only allow frontend assets from allowlist; return 404 for anything else
+    if (!isAllowedStaticPath(pathname)) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' }).end('Not found');
+      return;
+    }
+
+    // 3. Resolve target file
     const relPath = pathname === '/' ? '/index.html' : pathname;
     let file = path.resolve(root, '.' + relPath);
 

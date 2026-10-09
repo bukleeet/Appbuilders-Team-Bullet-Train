@@ -106,12 +106,19 @@ function getUpcomingDaysReference(baseDateIso, timezone) {
  * Detects explicit duration stated in input text (e.g. "2 hours", "90 mins", "1 hr 30 min", "half an hour").
  * Returns minutes as a number, or null if no explicit duration was mentioned.
  */
-function parseExplicitDuration(text) {
+export function parseExplicitDuration(text) {
   if (typeof text !== 'string') return null;
-  const t = text.toLowerCase();
+  let t = text.toLowerCase();
 
-  // "1 hour 30 mins", "1 hr 30 min", "2 hrs 15 mins"
-  const hrMinMatch = t.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\s*(?:and\s*)?(\d+)\s*(?:mins?|minutes?|m\b)/i);
+  // Strip course codes with number+letter suffixes (e.g. "MATH 2h", "CS 101a", "BIO 3b", "PHYS 2c")
+  // Exclude common English prepositions/conjunctions from the course code prefix
+  t = t.replace(/\b(?!(?:for|about|approx|around|take|takes|within|after|before|every|over|in|at)\b)[a-z]{2,}\s*\d+[a-z]\b/gi, ' ');
+
+  // Strip deadline phrases: "due in 3 hours", "due within 2 hrs", "in 3 hours", "within 45 mins", "by 5 hours"
+  t = t.replace(/\b(?:due\s+in|due\s+within|due\s+by|in|within)\s+\d+(?:\.\d+)?\s*(?:hours?|hrs?|h|minutes?|mins?|m)\b/gi, ' ');
+
+  // "1 hour 30 mins", "1 hr 30 min", "2 hrs 15 mins", "1h 30m"
+  const hrMinMatch = t.match(/\b(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\s*(?:and\s*)?(\d+)\s*(?:mins?|minutes?|m)\b/i);
   if (hrMinMatch) {
     const hrs = parseFloat(hrMinMatch[1]);
     const mins = parseInt(hrMinMatch[2], 10);
@@ -123,14 +130,25 @@ function parseExplicitDuration(text) {
     return 30;
   }
 
-  // "2.5 hours", "2 hours", "2 hrs", "2 hr", "1h"
-  const hrMatch = t.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h\b)/i);
+  // "quarter of an hour"
+  if (/\b(?:quarter\s+of\s+an\s+hour|quarter\s+hour)\b/i.test(t)) {
+    return 15;
+  }
+
+  // Explicit hours: "2.5 hours", "2 hours", "2 hrs", "2 hr"
+  const hrMatch = t.match(/\b(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)\b/i);
   if (hrMatch) {
     return Math.round(parseFloat(hrMatch[1]) * 60);
   }
 
-  // "45 mins", "45 minutes", "45 min"
-  const minMatch = t.match(/(\d+)\s*(?:mins?|minutes?|m\b)/i);
+  // Standalone "2h" or "1.5h" with prefix like "for 2h", "about 2h", "~2h", or preceded by non-alphanumeric
+  const bareHMatch = t.match(/(?:^|[^a-z0-9])(\d+(?:\.\d+)?)\s*h\b/i);
+  if (bareHMatch) {
+    return Math.round(parseFloat(bareHMatch[1]) * 60);
+  }
+
+  // Explicit minutes: "45 mins", "45 minutes", "45 min"
+  const minMatch = t.match(/\b(\d+)\s*(?:mins?|minutes?)\b/i);
   if (minMatch) {
     return parseInt(minMatch[1], 10);
   }
@@ -398,36 +416,31 @@ export async function interpretTask(text, context = {}, { signal, timeoutMs, url
     const dueAt = normalizeDueAt(rawDraft.dueAt, timezone);
 
     let estimatedMinutes = null;
+    const warnings = Array.isArray(rawDraft.warnings)
+      ? rawDraft.warnings.filter((w) => typeof w === 'string')
+      : [];
+
     if (explicitDuration !== null) {
       estimatedMinutes = explicitDuration;
     } else if (typeof rawDraft.estimatedMinutes === 'number' && rawDraft.estimatedMinutes > 0) {
-      // If the model suggested a duration but none was stated in text, enforce strict null
+      // Model suggested a duration but none was stated in text:
+      // Enforce strict null for contract missingFields, but record model estimate in warnings
       estimatedMinutes = null;
+      warnings.push(`Model estimated ${Math.round(rawDraft.estimatedMinutes)} minutes (unconfirmed)`);
     }
 
-    // Steps normalization: decompose into 2-4 concrete steps if array
-    let steps;
+    // Steps normalization: return steps as-is from model mapped to StepSchema
+    // If steps is omitted, null, or empty, default to [] without inventing steps
+    let steps = [];
     if (Array.isArray(rawDraft.steps)) {
       steps = rawDraft.steps
         .filter((s) => s && typeof s === 'object')
         .map((s, idx) => ({
           title: typeof s.title === 'string' && s.title.trim() ? s.title.trim() : `Step ${idx + 1}`,
-          estimatedMinutes: typeof s.estimatedMinutes === 'number' && s.estimatedMinutes > 0
+          estimatedMinutes: typeof s.estimatedMinutes === 'number' && Number.isFinite(s.estimatedMinutes) && s.estimatedMinutes >= 0
             ? Math.round(s.estimatedMinutes)
-            : (estimatedMinutes ? Math.round(estimatedMinutes / Math.max(1, rawDraft.steps.length)) : 30)
+            : 0
         }));
-
-      if (steps.length < 2) {
-        const stepMins = estimatedMinutes ? Math.round(estimatedMinutes / 2) : 30;
-        steps = [
-          { title: `Prepare and begin ${title || 'task'}`, estimatedMinutes: stepMins },
-          { title: `Complete and review ${title || 'task'}`, estimatedMinutes: stepMins }
-        ];
-      } else if (steps.length > 4) {
-        steps = steps.slice(0, 4);
-      }
-    } else {
-      steps = rawDraft.steps;
     }
 
     // Synchronize missingFields strictly with actual field presence
@@ -435,10 +448,6 @@ export async function interpretTask(text, context = {}, { signal, timeoutMs, url
     if (course === null) missingFields.push('course');
     if (dueAt === null) missingFields.push('dueAt');
     if (estimatedMinutes === null) missingFields.push('estimatedMinutes');
-
-    const warnings = Array.isArray(rawDraft.warnings)
-      ? rawDraft.warnings.filter((w) => typeof w === 'string')
-      : [];
 
     const draft = {
       title,
