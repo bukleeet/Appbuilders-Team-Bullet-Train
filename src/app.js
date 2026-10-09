@@ -1,4 +1,4 @@
-import { load, save, seed } from './store.js';
+import { load, save, seed } from './legacy-store.js';
 import { showPlanner, plannedSessions, countOpenTasks, deletePlannerTask } from './planner-ui.js';
 import { assistantPage } from './assistant-ui.js';
 
