@@ -35,7 +35,7 @@ function persist(text='',refresh=true) {
 }
 function render() {
   const nav={Today:'calendar',Week:'columns-3',Tasks:'circle-check',Settings:'settings-2'};
-app.innerHTML=`<aside class="sidebar"><div class="brand">${icon('notebook')}<div><span>WeekBack</span><small>Quiet Academic Planner</small></div></div><nav aria-label="Main navigation">${Object.keys(nav).map(n=>`<button data-page="${n}" class="nav-item ${page===n?'selected':''}" ${page===n?'aria-current="page"':''}>${icon(nav[n])}${n}</button>`).join('')}</nav><div class="sidebar-bottom"><div class="local-note">${icon('shield-check')} Saved in this browser</div><button class="profile" data-page="Assistant">${icon('notebook')}<span>Ask WeekBack<small>Your schedule assistant</small></span></button></div></aside><div class="workspace"><header class="topbar"><div class="date-controls"><div class="week-switch"><button data-shift="-7" aria-label="Previous week">${icon('chevron-left')}</button><span>${date(offset)} – ${date(offset+6)}</span><button data-shift="7" aria-label="Next week">${icon('chevron-right')}</button></div><button class="soft" data-today>Today</button></div><div class="connection"><span class="pill ${failed?'error-pill':'saved'}">${failed?'Save failed':'Saved on this device'}</span><span class="pill model">${icon(navigator.onLine?'circle-help':'wifi-off')}${navigator.onLine?'Local AI not connected':'Offline · manual mode'}</span></div><button class="primary" data-add>${icon('plus')} Add Task</button></header><main>${notice?`<div class="notice ${failed?'warning':''}" role="status">${esc(notice)}<button data-dismiss aria-label="Dismiss notification">${icon('x')}</button></div>`:''}${state.previous&&!preview?'<button class="undo-button" data-undo>Undo last recovery</button>':''}${preview?recovery():page==='Today'?today():page==='Week'?week():page==='Tasks'?tasks():page==='Assistant'?assistantPage(assistantDraft):settings()}</main></div>`;
+app.innerHTML=`<aside class="sidebar"><div class="brand"><img class="brand-logo" src="/public/waypoint-logo.png" alt=""><span>Waypoint</span></div><nav aria-label="Main navigation">${Object.keys(nav).map(n=>`<button data-page="${n}" class="nav-item ${page===n?'selected':''}" ${page===n?'aria-current="page"':''}>${icon(nav[n])}${n}</button>`).join('')}</nav><div class="sidebar-bottom"><div class="local-note">${icon('shield-check')} Saved in this browser</div><button class="profile" data-page="Assistant">${icon('notebook')}<span>Ask Waypoint<small>Your schedule assistant</small></span></button></div></aside><div class="workspace"><header class="topbar"><div class="date-controls"><div class="week-switch"><button data-shift="-7" aria-label="Previous week">${icon('chevron-left')}</button><span>${date(offset)} – ${date(offset+6)}</span><button data-shift="7" aria-label="Next week">${icon('chevron-right')}</button></div><button class="soft" data-today>Today</button></div><div class="connection"><span class="pill ${failed?'error-pill':'saved'}">${failed?'Save failed':'Saved on this device'}</span><span class="pill model">${icon(navigator.onLine?'circle-help':'wifi-off')}${navigator.onLine?'Local AI not connected':'Offline · manual mode'}</span></div><button class="primary" data-add>${icon('plus')} Add Task</button></header><main>${notice?`<div class="notice ${failed?'warning':''}" role="status">${esc(notice)}<button data-dismiss aria-label="Dismiss notification">${icon('x')}</button></div>`:''}${state.previous&&!preview?'<button class="undo-button" data-undo>Undo last recovery</button>':''}${preview?recovery():page==='Today'?today():page==='Week'?week():page==='Tasks'?tasks():page==='Assistant'?assistantPage(assistantDraft):settings()}</main></div>`;
   if (page === 'Week' && !preview) app.querySelector('main').insertAdjacentHTML('afterbegin', '<button class="primary" data-planner>Manage study plan & recovery</button>');
   resizeAssistantDraft();
   const calendarScroll = app.querySelector('.calendar-scroll');
@@ -86,7 +86,18 @@ app.addEventListener('click',e=>{
   else if('add'in d)showTask();
   else if(d.edit){const block=state.planner?.blocks.find(b=>b.id===d.edit);if(block||state.planner?.commitments.some(c=>c.id===d.edit)){showPlanner(app,state,base,persist,d.edit);return;}const task=find(d.edit);if(task)showTask(task);}
   else if('closeDialog'in d)document.querySelector('dialog')?.close();
-  else if(d.agenda){agendaMode=d.agenda;render();}
+  else if(d.agenda){
+    if(agendaMode===d.agenda)return;
+    const items=app.querySelector('.agenda-items');
+    const before=new Map([...items.querySelectorAll('.agenda-card')].map(card=>[card,card.getBoundingClientRect()]));
+    agendaMode=d.agenda;
+    items.classList.toggle('timeline',agendaMode==='timeline');
+    items.classList.toggle('list',agendaMode==='list');
+    app.querySelectorAll('[data-agenda]').forEach(button=>button.classList.toggle('chosen',button.dataset.agenda===agendaMode));
+    if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      before.forEach((rect,card)=>{const after=card.getBoundingClientRect();card.animate([{transform:`translate(${rect.left-after.left}px,${rect.top-after.top}px) scaleX(${rect.width/after.width})`},{transform:'none'}],{duration:220,easing:'cubic-bezier(.2,.7,.2,1)'});});
+    }
+  }
   else if(d.week){weekMode=d.week;render();}
   else if(d.detail){if(state.planner?.blocks.some(b=>b.id===d.detail)||state.planner?.commitments.some(b=>b.id===d.detail)){showPlanner(app,state,base,persist,d.detail);return;}selected=d.detail;page='Week';render();}
   else if('closeDetail'in d){selected=null;render();}
