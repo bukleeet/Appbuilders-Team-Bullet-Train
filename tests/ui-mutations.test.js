@@ -17,6 +17,8 @@ for (const editing of [false, true]) test(`task ${editing?'edit':'addition'} sur
   const saved = structuredClone(state);
   assert.equal(undoPlan(state).undone, false);
   assert.deepEqual(state, saved);
+  assert.equal(state.history.length, 1);
+  assert.equal(state.history[0].snapshot, null);
 });
 
 for (const status of ['partially_completed','completed','missed']) test(`${status} progress survives attempted plan undo`, () => {
@@ -27,4 +29,6 @@ for (const status of ['partially_completed','completed','missed']) test(`${statu
   const saved = structuredClone(state);
   assert.equal(undoPlan(state).undone, false);
   assert.deepEqual(state, saved);
+  assert.equal(state.history.length, 1);
+  assert.equal(state.history[0].snapshot, null);
 });

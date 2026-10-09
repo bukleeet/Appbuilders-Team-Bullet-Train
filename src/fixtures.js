@@ -18,7 +18,7 @@ import {
 
 /**
  * Creates an explicit demonstration AppState.
- * Anchor date defaults to the current week's Monday in Asia/Manila.
+ * Anchor date defaults to today in Asia/Manila so the demo remains useful late in the week.
  * @param {Date|string} [anchorInput=new Date()]
  * @param {string} [timezone=DEFAULT_TIMEZONE]
  * @returns {import('./model.js').AppState}
@@ -27,17 +27,9 @@ export function createDemoFixtures(anchorInput = new Date(), timezone = DEFAULT_
   const anchorDate = anchorInput instanceof Date ? anchorInput : new Date(anchorInput);
   const { date: todayStr } = toLocalDateAndTime(anchorDate, timezone);
 
-  // Compute Monday of the anchor week
-  const todayObj = new Date(`${todayStr}T12:00:00+08:00`);
-  const dayOfWeek = todayObj.getUTCDay(); // 0 is Sunday, 1 is Monday ...
-  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  const mondayMs = todayObj.getTime() + diffToMonday * 24 * 60 * 60 * 1000;
-  const mondayDate = new Date(mondayMs);
-  const { date: monStr } = toLocalDateAndTime(mondayDate, timezone);
-
-  // Helper to get date string for Day offset from Monday (0 = Mon, 1 = Tue, 2 = Wed, 3 = Thu, 4 = Fri, 5 = Sat, 6 = Sun)
+  // Sample events run from the anchor day through the next six days.
   function getDayDateStr(offsetDays) {
-    const dMs = new Date(`${monStr}T12:00:00+08:00`).getTime() + offsetDays * 24 * 60 * 60 * 1000;
+    const dMs = new Date(`${todayStr}T12:00:00+08:00`).getTime() + offsetDays * 24 * 60 * 60 * 1000;
     return toLocalDateAndTime(new Date(dMs), timezone).date;
   }
 
