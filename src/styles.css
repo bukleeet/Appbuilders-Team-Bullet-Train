@@ -19,5 +19,10 @@ dialog{padding:0;border:1px solid #e5edf3;border-radius:10px;width:min(900px,94v
 .calendar-block{padding:8px;gap:4px}
 .calendar-block>strong{line-height:1.3;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .calendar-block>small{line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+
+#planner-dialog .panel-title{position:sticky;top:0;z-index:2;background:white;padding:12px 0;border-bottom:1px solid #dce5ec}
+#planner-dialog .inset button,#planner-dialog button[data-remove],#planner-dialog button[data-close],#planner-dialog button[data-back]{background:#fff;border:1px solid #d4dfe7;padding:8px 12px;margin:4px 4px 4px 0;min-height:36px}
+#planner-dialog .actions{flex-wrap:wrap}
+#planner-dialog article:focus{outline:2px solid var(--blue);outline-offset:2px}
 #confirmation-dialog{padding:28px;width:440px}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important}}
