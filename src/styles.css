@@ -14,6 +14,8 @@ dialog{padding:0;border:1px solid #e5edf3;border-radius:10px;width:min(900px,94v
 .agenda-row.complete:first-child .agenda-card{background:var(--pale);border:0}
 .calendar{margin-left:40px;margin-right:40px}
 @media(max-width:1000px){.calendar{margin-left:0;margin-right:0}}
+.undo-button{margin:0 0 16px 8px;border:1px solid #cbd9e2;background:#fff;color:var(--blue);font-size:13px;box-shadow:0 1px 2px #131d2410}.undo-button:hover{background:var(--pale);border-color:#a9c0ce}
+@media(max-width:700px){.undo-button{margin-left:0}}
 
 /* Keep short calendar blocks readable when titles wrap. */
 .calendar-block{padding:8px;gap:4px}
