@@ -142,7 +142,7 @@ export async function interpretTask(text, context = {}, { signal, ...options } =
         );
       }
 
-      const modelUsed = res.headers.get('x-model-used') || 'qwen3.5:2b';
+      const modelUsed = res.headers.get('x-model-used') || 'qwen3.5:0.8b';
       const latencyHeader = res.headers.get('x-latency-ms');
       const latencyMs = latencyHeader != null ? Number(latencyHeader) : null;
 

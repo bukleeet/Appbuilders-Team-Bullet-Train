@@ -20,7 +20,7 @@ function setupTestServer(options = {}) {
 
 test('GET /api/ai/status returns 200 when Ollama is available', async () => {
   const { baseUrl, close } = await setupTestServer({
-    checkStatus: async () => ({ available: true, models: ['qwen3.5:2b'] })
+    checkStatus: async () => ({ available: true, models: ['qwen3.5:0.8b'] })
   });
 
   try {
@@ -28,7 +28,7 @@ test('GET /api/ai/status returns 200 when Ollama is available', async () => {
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'application/json');
     const data = await res.json();
-    assert.deepEqual(data, { available: true, models: ['qwen3.5:2b'] });
+    assert.deepEqual(data, { available: true, models: ['qwen3.5:0.8b'] });
   } finally {
     await close();
   }
@@ -81,7 +81,7 @@ test('POST /api/ai/interpret returns 200 with headers and TaskDraft on success',
   const { baseUrl, close } = await setupTestServer({
     interpret: async (text, context) => ({
       draft: expectedDraft,
-      modelUsed: 'qwen3.5:2b',
+      modelUsed: 'qwen3.5:0.8b',
       latencyMs: 342
     })
   });
@@ -98,7 +98,7 @@ test('POST /api/ai/interpret returns 200 with headers and TaskDraft on success',
 
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'application/json');
-    assert.equal(res.headers.get('x-model-used'), 'qwen3.5:2b');
+    assert.equal(res.headers.get('x-model-used'), 'qwen3.5:0.8b');
     assert.equal(res.headers.get('x-latency-ms'), '342');
 
     const data = await res.json();

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-export const DEFAULT_MODEL = 'qwen3.5:2b';
+export const DEFAULT_MODEL = 'qwen3.5:0.8b';
 export const DEFAULT_TIMEZONE = 'Asia/Manila';
-export const DEFAULT_TIMEOUT_MS = 45_000;
+export const DEFAULT_TIMEOUT_MS = 20_000;
 export const OLLAMA_STATUS_TIMEOUT_MS = 2_000;
 export const OLLAMA_BASE_URL = 'http://127.0.0.1:11434';
 

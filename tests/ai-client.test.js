@@ -28,14 +28,14 @@ test('getAIStatus returns ready: true and models list when server responds 200',
     assert.equal(req.url, '/api/ai/status');
     assert.equal(req.method, 'GET');
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ available: true, models: ['qwen3.5:2b'] }));
+    res.end(JSON.stringify({ available: true, models: ['qwen3.5:0.8b'] }));
   });
 
   try {
     const status = await getAIStatus({ baseUrl });
     assert.deepEqual(status, {
       ready: true,
-      models: ['qwen3.5:2b'],
+      models: ['qwen3.5:0.8b'],
       error: null
     });
   } finally {
@@ -90,7 +90,7 @@ test('interpretTask returns TaskDraft with draft and meta on success', async () 
     assert.equal(req.method, 'POST');
     res.writeHead(200, {
       'Content-Type': 'application/json',
-      'x-model-used': 'qwen3.5:2b',
+      'x-model-used': 'qwen3.5:0.8b',
       'x-latency-ms': '415'
     });
     res.end(JSON.stringify(mockDraft));
@@ -102,7 +102,7 @@ test('interpretTask returns TaskDraft with draft and meta on success', async () 
     // Verify Draft Guarantee: includes draft and meta
     assert.deepEqual(result.draft, mockDraft);
     assert.deepEqual(result.meta, {
-      modelUsed: 'qwen3.5:2b',
+      modelUsed: 'qwen3.5:0.8b',
       latencyMs: 415
     });
 
