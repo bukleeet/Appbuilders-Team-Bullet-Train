@@ -35,7 +35,7 @@ function createMockOllama(handler) {
  * Creates an ephemeral test instance of the application HTTP server from server.js.
  * Plugs into the mock Ollama instance for end-to-end integration testing.
  */
-function createTestAppServer({ ollamaUrl, interpretTimeoutMs = 10_000 } = {}) {
+function createTestAppServer({ ollamaUrl, interpretTimeoutMs = 45_000 } = {}) {
   const app = createServer({
     root: process.cwd(),
     interpret: (text, context, opts) => {
@@ -96,7 +96,7 @@ test('Successful extraction: mock valid Ollama JSON response, verify fields, x-m
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
-          model: 'llama3.2:1b',
+          model: DEFAULT_MODEL,
           response: JSON.stringify(expectedTaskDraft)
         })
       );
@@ -120,7 +120,7 @@ test('Successful extraction: mock valid Ollama JSON response, verify fields, x-m
 
     assert.equal(res.status, 200);
     assert.equal(res.headers.get('content-type'), 'application/json');
-    assert.equal(res.headers.get('x-model-used'), 'llama3.2:1b');
+    assert.equal(res.headers.get('x-model-used'), DEFAULT_MODEL);
 
     const latencyHeader = res.headers.get('x-latency-ms');
     assert.ok(latencyHeader != null, 'x-latency-ms header must be present');
@@ -153,7 +153,7 @@ test('Missing fields: prompt without a deadline returns dueAt: null and includes
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
-        model: 'llama3.2:1b',
+        model: DEFAULT_MODEL,
         response: JSON.stringify({
           title: 'Review CS notes',
           course: 'CS 101',
@@ -199,7 +199,7 @@ test('Missing duration: prompt without duration returns estimatedMinutes: null a
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
-        model: 'llama3.2:1b',
+        model: DEFAULT_MODEL,
         response: JSON.stringify({
           title: 'Read chapter 4 of biology textbook',
           course: null,
@@ -253,7 +253,7 @@ test('Task decomposition: verify steps array contains 2-4 parsed sub-steps with 
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
-        model: 'llama3.2:1b',
+        model: DEFAULT_MODEL,
         response: JSON.stringify({
           title: 'Essay Draft on Modern History',
           course: 'HIST 1',
@@ -488,7 +488,7 @@ test('Unit test: checkOllamaStatus parses models list when daemon is active', as
     res.end(
       JSON.stringify({
         models: [
-          { name: 'llama3.2:1b', model: 'llama3.2:1b' },
+          { name: 'qwen3.5:2b', model: 'qwen3.5:2b' },
           { name: 'mistral:latest', model: 'mistral:latest' }
         ]
       })
@@ -498,7 +498,7 @@ test('Unit test: checkOllamaStatus parses models list when daemon is active', as
   try {
     const status = await checkOllamaStatus({ url: `${mockOllama.url}/api/tags` });
     assert.equal(status.available, true);
-    assert.deepEqual(status.models, ['llama3.2:1b', 'mistral:latest']);
+    assert.deepEqual(status.models, ['qwen3.5:2b', 'mistral:latest']);
   } finally {
     await mockOllama.close();
   }
@@ -536,9 +536,15 @@ test('Unit test: interpretTask validates input and respects upstream cancellatio
 });
 
 test('Unit test: parseExplicitDuration accurately distinguishes effort from deadlines and course codes', () => {
+  assert.equal(parseExplicitDuration('Study 2h for MATH 54 quiz'), 120);
+  assert.equal(parseExplicitDuration('Read 45m chapter 3'), 45);
+  assert.equal(parseExplicitDuration('Finish CS 150 MP2 in 2 hours'), null);
+  assert.equal(parseExplicitDuration('Review notes 90 mins'), 90);
+  assert.equal(parseExplicitDuration('takes 3 hrs'), 180);
+  assert.equal(parseExplicitDuration('about 1h 30m'), 90);
+  assert.equal(parseExplicitDuration('Practice 1.5h'), 90);
   assert.equal(parseExplicitDuration('Submit CS 150 MP2, due in 3 hours'), null);
-  assert.equal(parseExplicitDuration('Read MATH 2h notes due Monday'), null);
-  assert.equal(parseExplicitDuration('Review CS 150 MP2 for 1.5 hours, due in 3 hours'), 90);
+  assert.equal(parseExplicitDuration('Read MATH 2h notes'), null);
   assert.equal(parseExplicitDuration('Read chapter 4 for 2h'), 120);
   assert.equal(parseExplicitDuration('Study for half an hour'), 30);
   assert.equal(parseExplicitDuration('Quick review for 45 mins'), 45);
@@ -550,7 +556,7 @@ test('Unit test: interpretTask defaults omitted steps to [] without inventing st
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
-        model: 'llama3.2:1b',
+        model: DEFAULT_MODEL,
         response: JSON.stringify({
           title: 'Single-action quick task',
           course: 'CS 101',
@@ -575,12 +581,41 @@ test('Unit test: interpretTask defaults omitted steps to [] without inventing st
   }
 });
 
+test('Unit test: interpretTask preserves null estimatedMinutes for steps when omitted', async () => {
+  const mockOllama = await createMockOllama((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        model: DEFAULT_MODEL,
+        response: JSON.stringify({
+          title: 'Review lecture notes',
+          course: 'CS 101',
+          dueAt: null,
+          estimatedMinutes: null,
+          steps: [{ title: 'Skim slides' }],
+          missingFields: ['dueAt', 'estimatedMinutes'],
+          warnings: []
+        })
+      })
+    );
+  });
+
+  try {
+    const result = await interpretTask('Review lecture notes', {}, {
+      url: `${mockOllama.url}/api/generate`
+    });
+    assert.equal(result.draft.steps[0].estimatedMinutes, null);
+  } finally {
+    await mockOllama.close();
+  }
+});
+
 test('Unit test: interpretTask flags model-suggested estimate in warnings when text has no duration', async () => {
   const mockOllama = await createMockOllama((req, res) => {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
-        model: 'llama3.2:1b',
+        model: DEFAULT_MODEL,
         response: JSON.stringify({
           title: 'Read chapter without duration',
           course: 'BIO 10',

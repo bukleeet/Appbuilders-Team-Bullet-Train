@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-export const DEFAULT_MODEL = 'llama3.2:1b';
+export const DEFAULT_MODEL = 'qwen3.5:2b';
 export const DEFAULT_TIMEZONE = 'Asia/Manila';
-export const DEFAULT_TIMEOUT_MS = 10_000;
+export const DEFAULT_TIMEOUT_MS = 45_000;
 export const OLLAMA_STATUS_TIMEOUT_MS = 2_000;
 export const OLLAMA_BASE_URL = 'http://127.0.0.1:11434';
 
@@ -43,7 +43,7 @@ export class ModelOutputError extends Error {
  */
 export const StepSchema = z.object({
   title: z.string().min(1),
-  estimatedMinutes: z.number().int().nonnegative()
+  estimatedMinutes: z.number().int().nonnegative().nullable()
 });
 
 /**
@@ -108,16 +108,14 @@ function getUpcomingDaysReference(baseDateIso, timezone) {
  */
 export function parseExplicitDuration(text) {
   if (typeof text !== 'string') return null;
-  let t = text.toLowerCase();
 
-  // Strip course codes with number+letter suffixes (e.g. "MATH 2h", "CS 101a", "BIO 3b", "PHYS 2c")
-  // Exclude common English prepositions/conjunctions from the course code prefix
-  t = t.replace(/\b(?!(?:for|about|approx|around|take|takes|within|after|before|every|over|in|at)\b)[a-z]{2,}\s*\d+[a-z]\b/gi, ' ');
+  // 1. Strip course codes where prefix is ALL-CAPS in original text (e.g. "MATH 2h", "CS 101a", "BIO 3b")
+  let t = text.replace(/\b[A-Z]{2,}\s*\d+[a-zA-Z]\b/g, ' ').toLowerCase();
 
-  // Strip deadline phrases: "due in 3 hours", "due within 2 hrs", "in 3 hours", "within 45 mins", "by 5 hours"
+  // 2. Strip deadline phrases: "due in 3 hours", "due within 2 hrs", "in 3 hours", "within 45 mins", "by 5 hours"
   t = t.replace(/\b(?:due\s+in|due\s+within|due\s+by|in|within)\s+\d+(?:\.\d+)?\s*(?:hours?|hrs?|h|minutes?|mins?|m)\b/gi, ' ');
 
-  // "1 hour 30 mins", "1 hr 30 min", "2 hrs 15 mins", "1h 30m"
+  // 3. Composite: "1 hour 30 mins", "1 hr 30 min", "2 hrs 15 mins", "1h 30m"
   const hrMinMatch = t.match(/\b(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\s*(?:and\s*)?(\d+)\s*(?:mins?|minutes?|m)\b/i);
   if (hrMinMatch) {
     const hrs = parseFloat(hrMinMatch[1]);
@@ -125,32 +123,36 @@ export function parseExplicitDuration(text) {
     return Math.round(hrs * 60 + mins);
   }
 
-  // "half an hour" or "half hour"
+  // 4. Word phrases: "half an hour", "quarter of an hour"
   if (/\b(?:half\s+an\s+hour|half\s+hour)\b/i.test(t)) {
     return 30;
   }
-
-  // "quarter of an hour"
   if (/\b(?:quarter\s+of\s+an\s+hour|quarter\s+hour)\b/i.test(t)) {
     return 15;
   }
 
-  // Explicit hours: "2.5 hours", "2 hours", "2 hrs", "2 hr"
+  // 5. Explicit hours: "2.5 hours", "2 hours", "2 hrs", "2 hr"
   const hrMatch = t.match(/\b(\d+(?:\.\d+)?)\s*(?:hours?|hrs?)\b/i);
   if (hrMatch) {
     return Math.round(parseFloat(hrMatch[1]) * 60);
   }
 
-  // Standalone "2h" or "1.5h" with prefix like "for 2h", "about 2h", "~2h", or preceded by non-alphanumeric
+  // 6. Bare hours: "2h", "1.5h" preceded by non-alphanumeric
   const bareHMatch = t.match(/(?:^|[^a-z0-9])(\d+(?:\.\d+)?)\s*h\b/i);
   if (bareHMatch) {
     return Math.round(parseFloat(bareHMatch[1]) * 60);
   }
 
-  // Explicit minutes: "45 mins", "45 minutes", "45 min"
+  // 7. Explicit minutes: "45 mins", "45 minutes", "45 min"
   const minMatch = t.match(/\b(\d+)\s*(?:mins?|minutes?)\b/i);
   if (minMatch) {
     return parseInt(minMatch[1], 10);
+  }
+
+  // 8. Bare minutes: "45m" preceded by non-alphanumeric
+  const bareMMatch = t.match(/(?:^|[^a-z0-9])(\d+)\s*m\b/i);
+  if (bareMMatch) {
+    return parseInt(bareMMatch[1], 10);
   }
 
   return null;
@@ -439,7 +441,7 @@ export async function interpretTask(text, context = {}, { signal, timeoutMs, url
           title: typeof s.title === 'string' && s.title.trim() ? s.title.trim() : `Step ${idx + 1}`,
           estimatedMinutes: typeof s.estimatedMinutes === 'number' && Number.isFinite(s.estimatedMinutes) && s.estimatedMinutes >= 0
             ? Math.round(s.estimatedMinutes)
-            : 0
+            : null
         }));
     }
 
