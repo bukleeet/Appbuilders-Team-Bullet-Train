@@ -31,6 +31,7 @@ const status = t => t.kind==='fixed'?'Fixed commitment':t.status==='done'?'Compl
 function persist(text='',refresh=true) {
   try {save(state);failed=false;notice=text;} catch {failed=true;notice='Changes could not be saved. Keep this page open and export a backup in Settings.';}
   if(refresh)render();
+  return {ok:!failed,message:notice};
 }
 function render() {
   const nav={Today:'calendar',Week:'columns-3',Tasks:'circle-check',Settings:'settings-2'};
