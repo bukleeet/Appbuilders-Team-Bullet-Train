@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "start": "node server.js",
-        "check": "node --check server.js && node --check src/app.js && node --check src/store.js"
+        "check": "node --check server.js && node --check src/app.js && node --check src/store.js && node --check src/model.js && node --check src/dates.js",
+        "test": "node --test tests/*.test.js"
     }
 }

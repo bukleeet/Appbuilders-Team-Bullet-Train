@@ -500,16 +500,3 @@ export function recordProgress(state, { blockId, taskId, completedMinutes, statu
 
   return { state, task, block, deltaMinutes };
 }
-
-// Backwards-compatible aliases for src/app.js before Person 4 UI integration
-export function load(storage) {
-  return loadState(storage);
-}
-
-export function save(data, storage) {
-  return saveState(data, storage);
-}
-
-export function seed() {
-  return createDemoFixtures();
-}
