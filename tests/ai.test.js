@@ -35,7 +35,7 @@ function createMockOllama(handler) {
  * Creates an ephemeral test instance of the application HTTP server from server.js.
  * Plugs into the mock Ollama instance for end-to-end integration testing.
  */
-function createTestAppServer({ ollamaUrl, interpretTimeoutMs = 20_000 } = {}) {
+function createTestAppServer({ ollamaUrl, interpretTimeoutMs = 45_000 } = {}) {
   const app = createServer({
     root: process.cwd(),
     interpret: (text, context, opts) => {
@@ -489,7 +489,7 @@ test('Unit test: checkOllamaStatus parses models list when daemon is active', as
     res.end(
       JSON.stringify({
         models: [
-          { name: 'qwen3.5:0.8b', model: 'qwen3.5:0.8b' },
+          { name: 'qwen3.5:2b', model: 'qwen3.5:2b' },
           { name: 'mistral:latest', model: 'mistral:latest' }
         ]
       })
@@ -499,7 +499,7 @@ test('Unit test: checkOllamaStatus parses models list when daemon is active', as
   try {
     const status = await checkOllamaStatus({ url: `${mockOllama.url}/api/tags` });
     assert.equal(status.available, true);
-    assert.deepEqual(status.models, ['qwen3.5:0.8b', 'mistral:latest']);
+    assert.deepEqual(status.models, ['qwen3.5:2b', 'mistral:latest']);
   } finally {
     await mockOllama.close();
   }
