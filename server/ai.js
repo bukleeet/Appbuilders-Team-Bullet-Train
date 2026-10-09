@@ -293,6 +293,40 @@ export async function checkOllamaStatus(options = {}) {
 }
 
 /**
+ * Pre-warms the Ollama model into memory with keep_alive to eliminate cold-load delays.
+ * Never throws on daemon failure.
+ *
+ * @param {object} [options]
+ * @returns {Promise<{ warmed: boolean }>}
+ */
+export async function warmupOllama(options = {}) {
+  const timeoutMs = options.timeoutMs ?? 5_000;
+  const baseUrl = options.baseUrl || OLLAMA_BASE_URL;
+  const url = options.url || `${baseUrl}/api/generate`;
+  const model = options.model || DEFAULT_MODEL;
+
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  const signal = options.signal ? AbortSignal.any([options.signal, timeoutSignal]) : timeoutSignal;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        prompt: '',
+        keep_alive: '30m',
+        stream: false
+      }),
+      signal
+    });
+    return { warmed: res.ok };
+  } catch {
+    return { warmed: false };
+  }
+}
+
+/**
  * Interprets natural language task input via loopback Ollama llama3.2:1b into a structured TaskDraft.
  * Never persists data to disk or database.
  *
@@ -341,8 +375,11 @@ export async function interpretTask(text, context = {}, { signal, timeoutMs, url
       format: 'json',
       stream: false,
       think: false,
+      keep_alive: '30m',
       options: {
-        temperature: 0.1
+        temperature: 0.1,
+        num_predict: 256,
+        num_ctx: 1024
       }
     };
 

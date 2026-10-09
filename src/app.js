@@ -1,4 +1,4 @@
-import {getAIStatus} from './ai-client.js';
+import {getAIStatus, warmupAI} from './ai-client.js';
 import {showTaskForm} from './task-capture.js';
 import { loadState, saveState, exportState, importState, acceptPlan, undoPlan, ValidationError } from './store.js';
 import { createTask, generateId, BLOCK_STATUS } from './model.js';
@@ -102,14 +102,14 @@ function confirmAction(title, text, action, value = '') {
 app.addEventListener('click',e=>{
   if(e.target.classList.contains('drawer-backdrop')){selected=null;render();return;}
   const button=e.target.closest('button');if(!button)return;const d=button.dataset;
-  if(d.page){page=d.page;preview=null;selected=null;render();if(page==='Settings'||page==='Assistant')probe();}
+  if(d.page){page=d.page;preview=null;selected=null;render();if(page==='Settings'||page==='Assistant'){probe();if(page==='Assistant')warmupAI().catch(()=>{});}}
   else if(d.shift){offset+=Number(d.shift);page='Week';preview=null;render();}
   else if('today'in d){offset=0;page='Today';preview=null;render();}
   else if(d.prompt){assistantDraft=d.prompt;render();document.querySelector('#assistant-draft').focus();}
   else if('planner'in d){selected=null;showPlanner(app,state,persist,d.planner||null);}
   else if('probe'in d)probe();
   else if('capture'in d)showTask(null,assistantDraft);
-  else if('add'in d)showTask();
+  else if('add'in d){warmupAI().catch(()=>{});showTask();}
   else if(d.edit){const task=findTask(d.edit);if(task)showTask(task);}
   else if('closeDialog'in d)document.querySelector('dialog')?.close();
   else if(d.agenda){
