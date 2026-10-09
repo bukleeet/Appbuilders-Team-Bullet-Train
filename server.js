@@ -56,6 +56,35 @@ export function isDeniedPath(pathname, filePath) {
 }
 
 /**
+ * Validates whether a requested static path is an allowed frontend application asset.
+ * Enforces an explicit allowlist:
+ * - / and /index.html
+ * - /src/** (.js, .css, .json, .mjs)
+ * - /public/** (.svg, .png, .jpg, .jpeg, .ico, .woff, .woff2, etc.)
+ * - /docs/design/** (.png, .jpg, .jpeg, .svg)
+ */
+export function isAllowedStaticPath(pathname) {
+  const normPath = pathname.replace(/\\/g, '/');
+
+  // Denials always take precedence
+  if (isDeniedPath(normPath)) return false;
+
+  // Root landing page
+  if (normPath === '/' || normPath === '/index.html') return true;
+
+  // Application source code and styles
+  if (/^\/src\/[a-zA-Z0-9_\-./]+\.(js|css|json|mjs)$/i.test(normPath)) return true;
+
+  // Public assets (icons, images, fonts)
+  if (/^\/public\/[a-zA-Z0-9_\-./]+\.(svg|png|jpg|jpeg|ico|woff|woff2|css|js|txt)$/i.test(normPath)) return true;
+
+  // Design preview assets
+  if (/^\/docs\/design\/[a-zA-Z0-9_\-./]+\.(png|jpg|jpeg|svg)$/i.test(normPath)) return true;
+
+  return false;
+}
+
+/**
  * Creates the HTTP server instance.
  * Allows dependency injection of root directory and AI helpers for testing.
  */
@@ -128,14 +157,22 @@ export function createServer({
       }
 
       let bodyStr = '';
+      let isTooLarge = false;
+
       req.on('data', (chunk) => {
         bodyStr += chunk;
-        if (bodyStr.length > 1_000_000) {
+        if (bodyStr.length > 1_000_000 && !isTooLarge) {
+          isTooLarge = true;
+          res.writeHead(413, { 'Content-Type': 'application/json' }).end(
+            JSON.stringify({ error: 'Payload Too Large' })
+          );
           req.destroy();
         }
       });
 
       req.on('end', async () => {
+        if (isTooLarge) return;
+
         let body;
         try {
           body = JSON.parse(bodyStr);
@@ -195,8 +232,8 @@ export function createServer({
       return;
     }
 
-    // 1. Explicitly deny .git, .env*, and archive/backup files
-    if (isDeniedPath(pathname)) {
+    // 1. Enforce static asset allowlist (blocks server files, package.json, tests, node_modules, .git, archives)
+    if (!isAllowedStaticPath(pathname)) {
       res.writeHead(403, { 'Content-Type': 'text/plain' }).end('Forbidden');
       return;
     }
@@ -211,7 +248,6 @@ export function createServer({
       return;
     }
 
-    // Check again on resolved path
     if (isDeniedPath(pathname, file)) {
       res.writeHead(403, { 'Content-Type': 'text/plain' }).end('Forbidden');
       return;
