@@ -99,6 +99,27 @@ export async function getAIStatus(options = {}) {
 }
 
 /**
+ * Pre-warms the local AI model asynchronously in the background.
+ * Never throws on failure.
+ *
+ * @param {object} [options]
+ * @returns {Promise<boolean>}
+ */
+export async function warmupAI(options = {}) {
+  const url = resolveUrl('/api/ai/warmup', options);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(4000)
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Interprets a natural language task description into a structured TaskDraft.
  * Calls POST /api/ai/interpret.
  * Returns Promise<TaskDraft> with { draft, meta: { modelUsed, latencyMs } }.

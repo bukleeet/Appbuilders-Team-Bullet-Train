@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import {
   checkOllamaStatus,
   interpretTask,
+  warmupOllama,
   OllamaOfflineError,
   TimeoutError,
   ModelOutputError
@@ -98,7 +99,8 @@ export function isAllowedStaticPath(pathname) {
 export function createServer({
   root = process.cwd(),
   checkStatus = checkOllamaStatus,
-  interpret = interpretTask
+  interpret = interpretTask,
+  warmup = warmupOllama
 } = {}) {
   return http.createServer(async (req, res) => {
     const rawUrl = req.url || '';
@@ -112,6 +114,28 @@ export function createServer({
       pathname = decodeURIComponent(new URL(rawUrl, 'http://localhost').pathname);
     } catch {
       res.writeHead(400, { 'Content-Type': 'text/plain' }).end('Bad Request');
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // Endpoint: POST /api/ai/warmup
+    // -------------------------------------------------------------
+    if (pathname === '/api/ai/warmup') {
+      if (req.method !== 'POST') {
+        res.writeHead(405, { 'Content-Type': 'application/json' }).end(
+          JSON.stringify({ error: 'Method Not Allowed' })
+        );
+        return;
+      }
+
+      try {
+        const result = await warmup();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(result || { warmed: true }));
+      } catch {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ warmed: false }));
+      }
       return;
     }
 
