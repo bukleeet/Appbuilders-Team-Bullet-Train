@@ -17,9 +17,20 @@ export function schedulerState(state, base) {
 export function plannedSessions(state, base) {
   if (!state.planner?.accepted) return state.tasks;
   const localDate = value => new Date(value).toLocaleDateString('en-CA',{timeZone:'Asia/Manila'});
-  const origin=Date.parse(`${localDate(base)}T00:00:00+08:00`);
+  const origin=Date.parse(`${base.getFullYear()}-${String(base.getMonth()+1).padStart(2,'0')}-${String(base.getDate()).padStart(2,'0')}T00:00:00+08:00`);
   const convert = (b,t) => ({...t,id:b.id,day:Math.round((Date.parse(`${localDate(b.startAt)}T00:00:00+08:00`)-origin)/86400000),time:new Date(b.startAt).toLocaleTimeString('en-GB',{timeZone:'Asia/Manila',hour:'2-digit',minute:'2-digit'}),sessionMinutes:(Date.parse(b.endAt)-Date.parse(b.startAt))/60000,status:b.status==='completed'?'done':b.status});
-  return [...state.tasks.filter(t=>t.kind==='fixed'),...state.planner.commitments.map(c=>convert(c,{title:c.title,course:'FIXED COMMITMENT',kind:'fixed',minutes:0})),...state.planner.blocks.map(b=>convert(b,state.tasks.find(t=>t.id===b.taskId)||{title:'Removed task',course:''}))];
+  return [...state.tasks.filter(t=>t.kind==='fixed'),...state.planner.commitments.map(c=>convert(c,{title:c.title,course:'FIXED COMMITMENT',kind:'fixed',minutes:0})),...state.planner.blocks.filter(b=>state.tasks.some(t=>t.id===b.taskId)).map(b=>({...convert(b,state.tasks.find(t=>t.id===b.taskId)),taskId:b.taskId}))];
+}
+
+export const countOpenTasks = sessions => new Set(sessions.filter(t=>t.kind!=='fixed'&&t.status!=='done'&&t.minutes>0).map(t=>t.taskId||t.id)).size;
+
+export function deletePlannerTask(state, id) {
+  state.tasks=state.tasks.filter(t=>t.id!==id);
+  if (state.previous) state.previous=state.previous.filter(t=>t.id!==id);
+  if (state.planner) {
+    state.planner.blocks=state.planner.blocks.filter(b=>b.taskId!==id);
+    if (state.planner.previous) state.planner.previous.blocks=state.planner.previous.blocks.filter(b=>b.taskId!==id);
+  }
 }
 
 export function showPlanner(app, state, base, persist) {
