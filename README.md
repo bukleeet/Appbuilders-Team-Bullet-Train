@@ -1,13 +1,13 @@
 # WeekBack
 
-Run `npm start`, then open http://localhost:3000. No dependencies or remote fonts required.
+Run `npm install`, then `npm start`, and open http://localhost:3000. No remote fonts required.
 
-Initial UI: Today timeline/list, timed Week grid and details drawer, Tasks, Settings, manual task entry/editing, local saving, partial progress, recovery preview and undo. AI and automatic scheduling are pending; manual recovery proposals are labeled. No cloud sync.
+UI: Today timeline/list, timed Week grid and details drawer, Tasks, Settings, manual task entry/editing, local saving, session progress (done, partial, missed), scheduler-based recovery preview, accept and undo, and backup export/import. No cloud sync.
 
-Code boundaries: src/store.js (data), src/app.js (UI), src/styles.css (design).
+Code boundaries: src/model.js, src/dates.js, src/store.js, src/fixtures.js (data, schema v2), src/scheduler.js (planning), src/app.js and src/planner-ui.js (UI), src/styles.css (design), server.js and server/ai.js (local server and AI).
 
-Week → Manage study plan & recovery connects the pure scheduler through a temporary v1 adapter in src/planner-ui.js. Enter dated availability and fixed commitments, preview planning or repair, inspect changes/shortages, then accept or cancel. Accepted sessions appear in Week and persist locally; manage session locks and progress in the planner dialog. Undo restores the last accepted plan and is cleared after progress changes. Run `npm test` for scheduler checks.
+Tasks hold the remaining work and deadline; study sessions come from the scheduler. Week → Manage study plan & recovery: enter dated availability and fixed commitments, preview planning or repair, inspect changes and shortages, then accept or cancel. Marking a session missed opens a recovery preview built from your availability. Undo restores the last accepted plan and is cleared after progress is recorded. Run `npm test` for all module checks.
 
-Integration limitations: Today still uses legacy manual sessions, and legacy task dates still shift on later-day reloads. Person 3's stable timestamp model and persistence helpers must replace the adapter before full end-to-end completion. Local AI remains unavailable.
+Integration limitations: Local AI is not yet connected to the UI (quick capture and the assistant page are placeholders). Data saved by the old v1 UI is migrated automatically on first load, with the original kept under the `weekback-v1-backup` key.
 
 Existing saved tasks are preserved. To inspect the full sample design, choose Settings → Load sample week after exporting any data you want to keep. UI icons are bundled locally from Lucide; the license is in public/icons/LICENSE.
