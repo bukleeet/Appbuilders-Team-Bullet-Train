@@ -42,7 +42,7 @@ function buildProposal(state, options, keepValidPlanned) {
   const commitments = readIntervals(state.commitments, warnings);
 
   // Classify existing blocks.
-  const fixed = [];      // kept untouched: locked, done/partial/missed, or planned in the past
+  const fixed = [];      // kept untouched: locked, completed/partially_completed/missed, or planned in the past
   const candidates = []; // unlocked planned blocks at or after now
   for (const block of state.blocks ?? []) {
     const start = toMs(block.startAt);

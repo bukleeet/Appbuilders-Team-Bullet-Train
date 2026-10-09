@@ -132,15 +132,19 @@ test('insufficient capacity is quantified exactly and no time is invented', () =
 });
 
 test('partial progress: remainingMinutes is used as-is and progress blocks are not double counted', () => {
-  const done = block('p1', 'ps', '2026-10-11T01:00:00.000Z', '2026-10-11T02:00:00.000Z', { status: 'partial', completedMinutes: 30 });
+  const partial = block('p1', 'ps', '2026-10-11T01:00:00.000Z', '2026-10-11T02:00:00.000Z', { status: 'partially_completed', completedMinutes: 30 });
+  // Finished early: a completed block still occupies its slot and covers no future need.
+  const completed = block('p2', 'ps', at(0, '01:00'), at(0, '02:00'), { status: 'completed', completedMinutes: 60 });
   const s = state({
     tasks: [task('ps', 90, at(2, '12:00'))],
     availability: [window('w1', 0, '01:00', '05:00')],
-    blocks: [done],
+    blocks: [partial, completed],
   });
   const result = planWeek(s, { now: NOW });
   assert.equal(total(planned(result, 'ps')), 90);
-  assert.deepEqual(result.blocks.find((b) => b.id === 'p1'), done);
+  assert.deepEqual(result.blocks.find((b) => b.id === 'p1'), partial);
+  assert.deepEqual(result.blocks.find((b) => b.id === 'p2'), completed);
+  assert.equal(planned(result, 'ps')[0].startAt, at(0, '02:15'), 'new work starts after the completed block plus gap');
 });
 
 test('done tasks are not scheduled', () => {
