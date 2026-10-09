@@ -1,13 +1,13 @@
-# WeekBack
+# Waypoint
 
-Run `npm start`, then open http://localhost:3000. No dependencies or remote fonts required.
+Run `npm install`, then `npm start` and open http://localhost:3000. Icons and fonts are local. For optional local task extraction, start Ollama and install `qwen3.5:2b`.
 
-Initial UI: Today timeline/list, timed Week grid and details drawer, Tasks, Settings, manual task entry/editing, local saving, partial progress, recovery preview and undo. AI and automatic scheduling are pending; manual recovery proposals are labeled. No cloud sync.
+Today and Week render stable v2 study blocks and commitments. Tasks are saved through the validated v2 store, with migration backups for old data. Settings supports validated backup import/export and explicit sample loading. No cloud sync.
 
 Code boundaries: src/store.js (data), src/app.js (UI), src/styles.css (design).
 
-Week → Manage study plan & recovery connects the pure scheduler through a temporary v1 adapter in src/planner-ui.js. Enter dated availability and fixed commitments, preview planning or repair, inspect changes/shortages, then accept or cancel. Accepted sessions appear in Week and persist locally; manage session locks and progress in the planner dialog. Undo restores the last accepted plan and is cleared after progress changes. Run `npm test` for scheduler checks.
+Week → Manage study plan & recovery uses `planWeek`/`repairPlan` with the shared state. Enter availability and commitments, inspect changes and shortages, then accept/cancel. Acceptance, undo and progress use Person 3's helpers. Today and Week share the same sessions. Run `npm test` for module checks.
 
-Integration limitations: Today still uses legacy manual sessions, and legacy task dates still shift on later-day reloads. Person 3's stable timestamp model and persistence helpers must replace the adapter before full end-to-end completion. Local AI remains unavailable.
+Add Task → Describe a task calls the local extraction API. Review title, course, deadline, effort and steps before saving; uncertain estimates require explicit confirmation. Cancellation and manual entry are available. Ask Waypoint reuses task capture for the demo; conversational schedule Q&A is not implemented. AI status is probed on load and in Settings.
 
 Existing saved tasks are preserved. To inspect the full sample design, choose Settings → Load sample week after exporting any data you want to keep. UI icons are bundled locally from Lucide; the license is in public/icons/LICENSE.

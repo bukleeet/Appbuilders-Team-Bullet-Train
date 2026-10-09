@@ -25,6 +25,8 @@ dialog{padding:0;border:1px solid #e5edf3;border-radius:10px;width:min(900px,94v
 @keyframes backdrop-arrive{from{opacity:0}to{opacity:1}}
 @keyframes drawer-arrive{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
 .agenda-card{transform-origin:left top}
+.missing-field{border-color:#a36026;background:#fff7eb}
+[hidden]{display:none!important}
 .brand{gap:8px;padding:8px 4px}
 .brand-logo{width:54px;height:38px;object-fit:contain;flex-shrink:0}
 .brand>span{font-size:28px;letter-spacing:-.6px;color:var(--blue)}

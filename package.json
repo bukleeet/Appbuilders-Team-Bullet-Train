@@ -5,7 +5,7 @@
     "type": "module",
     "scripts": {
         "start": "node server.js",
-        "check": "node --check server.js && node --check server/ai.js && node --check src/ai-client.js && node --check src/app.js && node --check src/store.js && node --check src/planner-ui.js && node --check src/scheduler.js",
+        "check": "node --check server.js && node --check server/ai.js && node --check src/ai-client.js && node --check src/app.js && node --check src/assistant-ui.js && node --check src/task-capture.js && node --check src/integrated-planner.js && node --check src/store.js && node --check src/planner-ui.js && node --check src/scheduler.js",
         "test": "node --test tests/*.test.js"
     },
     "dependencies": {
