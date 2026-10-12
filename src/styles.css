@@ -484,3 +484,33 @@ dialog{border-radius:15px;border-color:#dbe6ed;box-shadow:0 20px 80px #18384c36}
   .planner-feedback{padding:12px 19px}
   .planner-progress{padding:23px 19px}
 }
+
+/* Keep approaching deadlines and missed work visible from the daily landing page. */
+.overdue-reminder{display:grid;grid-template-columns:minmax(215px,.75fr) minmax(0,1.25fr);gap:28px;align-items:center;margin:0 0 24px;padding:24px 28px;border:1px solid #eed9cb;border-left:4px solid #bf7558;border-radius:13px;background:linear-gradient(115deg,#fff6f0,#fff 66%);box-shadow:0 4px 17px #6b3e1b0a}
+.overdue-kicker{display:flex;gap:8px;align-items:center;color:#935137;font-size:10px;font-weight:800;letter-spacing:1.15px}
+.overdue-kicker .icon{width:17px;height:17px}
+.overdue-heading h2{font-size:23px;margin:10px 0 8px;color:#733f31}
+.overdue-heading p{max-width:345px;font-size:12px;line-height:1.65;color:#785f54;margin-bottom:17px}
+.overdue-heading .soft{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid #e9cbb9;color:#87492f;font-size:12px;font-weight:700;border-radius:8px}
+.overdue-heading .soft .icon{width:13px;height:13px}
+.overdue-items{display:grid;gap:7px;min-width:0}
+.overdue-item{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:13px 15px;text-align:left;border:1px solid #ecdcd1;border-radius:9px;background:#fff;transition:background .15s ease,border-color .15s ease}
+.overdue-item:hover{background:#fffaf7;border-color:#dca98c}
+.overdue-item>span:first-child{min-width:0}
+.overdue-item strong{display:block;font-size:13px;font-weight:700;color:#533d38;line-height:1.45;overflow-wrap:anywhere}
+.overdue-item small{display:block;margin-top:4px;color:#846b60;font-size:11px;line-height:1.55}
+.overdue-minutes{display:inline-flex;flex-shrink:0;align-items:center;gap:6px;color:#9b573d;font-size:11px;font-weight:700;white-space:nowrap}
+.overdue-minutes .icon{width:13px;height:13px}
+.overdue-more{font-size:11px;color:#785f54;padding:4px 8px;margin:0}
+.task-filters{max-width:100%;overflow-x:auto}
+.task-filters button{white-space:nowrap}
+@media(max-width:850px){.overdue-reminder{grid-template-columns:1fr;gap:15px}.overdue-heading p{max-width:none}}
+@media(max-width:700px){
+  .overdue-reminder{padding:20px 18px;gap:13px;margin-bottom:20px}
+  .overdue-heading h2{font-size:21px}
+  .overdue-heading p{margin-bottom:12px}
+  .overdue-item{padding:12px;align-items:flex-start;flex-wrap:wrap}
+  .overdue-minutes{margin-left:auto}
+  .task-filters button{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.overdue-item{transition:none}}
