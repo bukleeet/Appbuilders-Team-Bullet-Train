@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { sortedTasks, matchesTask, overdueTasks, isOverdue } from '../src/task-list.js';
+import { sortedTasks, sortTaskList, matchesTask, overdueTasks, isOverdue } from '../src/task-list.js';
 
 const tasks = [
   {id:'undated',title:'Reading',course:'HIST',status:'open',dueAt:null},
@@ -12,6 +12,26 @@ const tasks = [
 test('task order prioritizes unfinished deadlines while preserving stored order', () => {
   assert.deepEqual(sortedTasks(tasks).map(t => t.id), ['soon','later','undated','done']);
   assert.deepEqual(tasks.map(t => t.id), ['undated','done','later','soon']);
+});
+
+test('task browser can sort by title, course and remaining effort without moving completed tasks first', () => {
+  const withEffort = tasks.map((task, index) => ({...task, remainingMinutes: [45, 0, 120, 30][index]}));
+  assert.deepEqual(sortTaskList(withEffort, 'deadline').map(t => t.id), ['soon','later','undated','done']);
+  assert.deepEqual(sortTaskList(withEffort, 'title').map(t => t.id), ['soon','later','undated','done']);
+  assert.deepEqual(sortTaskList(withEffort, 'course').map(t => t.id), ['soon','undated','later','done']);
+  assert.deepEqual(sortTaskList(withEffort, 'effort').map(t => t.id), ['soon','undated','later','done']);
+  assert.deepEqual(sortTaskList(withEffort, 'unknown').map(t => t.id), ['soon','later','undated','done']);
+  assert.deepEqual(withEffort.map(t => t.id), ['undated','done','later','soon']);
+});
+
+test('tasks with the same sort value retain deadline priority', () => {
+  const tied = [
+    {id:'later', title:'Shared', course:'CS', status:'open', remainingMinutes:60, dueAt:'2026-10-20T01:00:00Z'},
+    {id:'earlier', title:'Shared', course:'CS', status:'open', remainingMinutes:60, dueAt:'2026-10-14T01:00:00Z'}
+  ];
+  for (const mode of ['title','course','effort']) {
+    assert.deepEqual(sortTaskList(tied, mode).map(t => t.id), ['earlier','later']);
+  }
 });
 
 test('task search matches title and course, with optional status filters', () => {

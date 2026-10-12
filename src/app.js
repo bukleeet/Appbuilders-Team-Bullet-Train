@@ -7,12 +7,12 @@ import { createDemoFixtures } from './fixtures.js';
 import { repairPlan } from './scheduler.js';
 import { showPlanner, sessionItems, countOpenTasks, deleteTask, todayStart, progress, canUndo, reason, titleFor } from './planner-ui.js';
 import { assistantPage } from './assistant-ui.js';
-import { sortedTasks, matchesTask, overdueTasks, isOverdue } from './task-list.js';
+import { sortedTasks, sortTaskList, matchesTask, overdueTasks, isOverdue } from './task-list.js';
 
 let state = loadState(), page = 'Today', preview = null, selected = null, active = null;
 let agendaMode = 'timeline', weekMode = window.matchMedia('(max-width: 700px)').matches ? 'list' : 'grid', offset = 0, notice = '', failed = false, warn = false;
 let assistantDraft='';
-let taskQuery='', taskFilter='all';
+let taskQuery='', taskFilter='all', taskSort='deadline';
 let pendingImport=null;
 const ai={ready:false,models:[],error:null,label:'Checking local AI…'};
 let probeSequence=0;
@@ -162,11 +162,11 @@ function tasks() {
   const completed=state.tasks.filter(t=>t.status==='done').length;
   const remaining=state.tasks.length-completed;
   const overdue=overdueTasks(state.tasks).length;
-  const rows=sortedTasks(state.tasks).map(t=>{
+  const rows=sortTaskList(state.tasks,taskSort).map(t=>{
     const s=nextSession(t.id), overdue=isOverdue(t);
-    return `<div class="task-table-row ${t.status==='done'?'complete':''}" data-task-id="${esc(t.id)}"><div><small>${esc(t.course||'General')}</small><h3>${esc(t.title)}</h3><span class="status-tag ${overdue?'overdue':''}">${t.status==='done'?'Completed':overdue?'Overdue':s?'Scheduled':'Not scheduled'}</span></div><span>${t.dueAt?`${overdue?'Overdue · ':'Due '}${when(t.dueAt)}`:'No deadline'}<small>${s?`${date(s.day)} · ${range(s)}`:'No upcoming session'}</small></span><span>${t.remainingMinutes} min</span><div class="actions"><button class="soft compact" data-edit="${esc(t.id)}">${icon('pencil')} Edit</button><button class="icon-button" data-delete="${esc(t.id)}" aria-label="Delete ${esc(t.title)}">${icon('x')}</button></div></div>`;
+    return `<div class="task-table-row ${t.status==='done'?'complete':''}" data-task-id="${esc(t.id)}"><div><small>${esc(t.course||'General')}</small><h3>${esc(t.title)}</h3><span class="status-tag ${overdue?'overdue':''}">${t.status==='done'?'Completed':overdue?'Overdue':s?'Scheduled':'Not scheduled'}</span></div><span class="task-due"><span class="task-field-label">Due / next session</span>${t.dueAt?`${overdue?'Overdue · ':'Due '}${when(t.dueAt)}`:'No deadline'}<small>${s?`${date(s.day)} · ${range(s)}`:'No upcoming session'}</small></span><span class="task-effort"><span class="task-field-label">Remaining</span>${t.remainingMinutes} min</span><div class="actions"><button class="soft compact" data-edit="${esc(t.id)}">${icon('pencil')} Edit</button><button class="icon-button" data-delete="${esc(t.id)}" aria-label="Delete ${esc(t.title)}">${icon('x')}</button></div></div>`;
   }).join('');
-  return `<span class="eyebrow">A LITTLE STRUCTURE FOR EVERYTHING AHEAD</span><h1>Tasks</h1><p class="page-description">Keep your assignments in one place and make steady progress.</p><div class="task-overview"><span><strong>${remaining}</strong> to finish</span><span><strong>${completed}</strong> completed</span>${overdue?`<span class="task-overdue-count"><strong>${overdue}</strong> overdue</span>`:''}</div><section class="panel task-table" aria-label="Your tasks">${state.tasks.length?`<div class="task-toolbar"><label for="task-search">Find a task<input type="search" id="task-search" data-task-search placeholder="Search by task or course" autocomplete="off" value="${esc(taskQuery)}"></label><div class="task-filters" role="group" aria-label="Filter tasks by status">${[['all','All'],['open','To do'],['done','Completed'],...((overdue||taskFilter==='overdue')?[['overdue',`Overdue (${overdue})`]]:[])].map(([value,label])=>`<button type="button" class="${taskFilter===value?'chosen':''}" data-task-filter="${value}" aria-pressed="${taskFilter===value}">${label}</button>`).join('')}</div></div><p class="task-results" data-task-results role="status"></p><div class="task-table-head"><span>TASK / COURSE</span><span>DUE · NEXT SESSION</span><span>REMAINING</span><span>ACTIONS</span></div>${rows}<div class="task-empty-filter" data-task-empty hidden><p>No tasks match these filters.</p><button class="soft" data-clear-task-filter>Clear filters</button></div>`:`<div class="empty-list">${icon('circle-check')}<p>No tasks yet. Add one to start building your week.</p><button class="primary" data-add>${icon('plus')} Add your first task</button></div>`}</section>`;
+  return `<span class="eyebrow">A LITTLE STRUCTURE FOR EVERYTHING AHEAD</span><h1>Tasks</h1><p class="page-description">Keep your assignments in one place and make steady progress.</p><div class="task-overview"><span><strong>${remaining}</strong> to finish</span><span><strong>${completed}</strong> completed</span>${overdue?`<span class="task-overdue-count"><strong>${overdue}</strong> overdue</span>`:''}</div><section class="panel task-table" aria-label="Your tasks">${state.tasks.length?`<div class="task-toolbar"><label class="task-search-label" for="task-search">Find a task<input type="search" id="task-search" data-task-search placeholder="Search by task or course" autocomplete="off" value="${esc(taskQuery)}"></label><div class="task-controls"><div class="task-filters" role="group" aria-label="Filter tasks by status">${[['all','All'],['open','To do'],['done','Completed'],...((overdue||taskFilter==='overdue')?[['overdue',`Overdue (${overdue})`]]:[])].map(([value,label])=>`<button type="button" class="${taskFilter===value?'chosen':''}" data-task-filter="${value}" aria-pressed="${taskFilter===value}">${label}</button>`).join('')}</div><label class="task-sort-label" for="task-sort">Sort by<select id="task-sort" data-task-sort>${[['deadline','Due date'],['title','Task name'],['course','Course'],['effort','Shortest first']].map(([value,label])=>`<option value="${value}" ${taskSort===value?'selected':''}>${label}</option>`).join('')}</select></label></div></div><p class="task-results" data-task-results role="status"></p><div class="task-table-head"><span>TASK / COURSE</span><span>DUE · NEXT SESSION</span><span>REMAINING</span><span>ACTIONS</span></div>${rows}<div class="task-empty-filter" data-task-empty hidden><p>No tasks match these filters.</p><button class="soft" data-clear-task-filter>Clear filters</button></div>`:`<div class="empty-list">${icon('circle-check')}<p>No tasks yet. Add one to start building your week.</p><button class="primary" data-add>${icon('plus')} Add your first task</button></div>`}</section>`;
 }
 function updateTaskResults() {
   const rows=[...app.querySelectorAll('.task-table-row[data-task-id]')];
@@ -276,6 +276,7 @@ app.addEventListener('click',e=>{
   else if('export'in d){try{const url=URL.createObjectURL(new Blob([exportState(state)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='waypoint-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(err){notice=`Export failed: ${err.errors?.[0]||err.message}`;warn=true;render();}}
 });
 app.addEventListener('change',async e=>{
+  if(e.target.matches('[data-task-sort]')){taskSort=e.target.value;render();app.querySelector('[data-task-sort]')?.focus({preventScroll:true});return;}
   if(e.target.id!=='import-file'||!e.target.files[0])return;
   try {
     const backup=await e.target.files[0].text();

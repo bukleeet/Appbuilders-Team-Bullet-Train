@@ -10,6 +10,19 @@ export function sortedTasks(tasks) {
   });
 }
 
+// Keep completed work last in every view, with deadline order as a predictable tie-breaker.
+export function sortTaskList(tasks, mode = 'deadline') {
+  const ordered = sortedTasks(tasks);
+  if (mode === 'deadline') return ordered;
+  const compare = {
+    title: (a, b) => a.title.localeCompare(b.title),
+    course: (a, b) => (a.course || '').localeCompare(b.course || ''),
+    effort: (a, b) => (Number.isFinite(a.remainingMinutes) ? a.remainingMinutes : Infinity) - (Number.isFinite(b.remainingMinutes) ? b.remainingMinutes : Infinity)
+  }[mode];
+  if (!compare) return ordered;
+  return ordered.sort((a, b) => Number(a.status === 'done') - Number(b.status === 'done') || compare(a, b));
+}
+
 export function isOverdue(task, now = Date.now()) {
   return task.status !== 'done' && Boolean(task.dueAt) && Number.isFinite(Date.parse(task.dueAt)) && Date.parse(task.dueAt) < now;
 }
