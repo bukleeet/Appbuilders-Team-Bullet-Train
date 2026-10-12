@@ -68,32 +68,69 @@ export function proposalSummary(proposal, taskName) {
 
 export function showPlanner(app, state, persist, selectedId=null) {
   let proposal=null;
+  let lastWindowDate=toLocalDateAndTime(new Date()).date;
   app.insertAdjacentHTML('beforeend', '<dialog id="planner-dialog"><div class="dialog-body"></div></dialog>');
   const dialog=app.querySelector('#planner-dialog'),body=dialog.querySelector('.dialog-body');
   const taskName=id=>titleFor(state,id)||id;
-  const save=message=>{const result=persist(message,false);proposal=null;render();const feedback=document.createElement('p');feedback.setAttribute('role',result.ok?'status':'alert');feedback.classList.toggle('warning',!result.ok);feedback.textContent=result.message;body.prepend(feedback);};
+  const focusInBody=selector=>{const target=body.querySelector(selector);if(target){if(!target.matches('button,input,select,textarea,a[href]'))target.tabIndex=-1;target.focus({preventScroll:true});}};
+  const save=message=>{
+    const result=persist(message,false);
+    proposal=null;
+    render();
+    const feedback=document.createElement('p');
+    feedback.className=`planner-feedback${result.ok?'':' warning'}`;
+    feedback.setAttribute('role',result.ok?'status':'alert');
+    feedback.tabIndex=-1;
+    feedback.textContent=result.message;
+    body.querySelector('.planner-header').after(feedback);
+    feedback.focus({preventScroll:true});
+  };
+  const windowList=kind=>{
+    const entries=[...state[kind]].sort((a,b)=>Date.parse(a.startAt)-Date.parse(b.startAt));
+    return entries.length?`<ul class="planner-entries">${entries.map(w=>`<li class="planner-entry"><div><strong>${escape(w.title||'Study time')}</strong><span>${display(w.startAt)} – ${new Date(w.endAt).toLocaleTimeString('en-PH',{timeZone:'Asia/Manila',hour:'numeric',minute:'2-digit'})}</span></div><button type="button" data-remove="${escape(w.id)}" data-kind="${kind}" aria-label="Remove ${escape(w.title||'study time')} on ${display(w.startAt)}">Remove</button></li>`).join('')}</ul>`:'<p class="planner-empty">Nothing added yet.</p>';
+  };
   function render(){
-    body.innerHTML=`<div class="panel-title"><h2>Study plan</h2><button type="button" data-close>Close</button></div><p>Enter dated study availability in Philippine time. Planning only uses the time you enter here.</p><form id="window-form"><div class="form-row"><label>Type<select name="kind"><option value="availability">Study availability</option><option value="commitments">Fixed commitment</option></select></label><label>Title (commitments)<input name="title" maxlength="180"></label></div><div class="form-row three"><label>Date<input name="date" type="date" required></label><label>Start<input name="start" type="time" required></label><label>End<input name="end" type="time" required></label></div><p role="alert" id="window-error"></p><button class="soft">Add window</button></form><hr>${['availability','commitments'].map(kind=>`<h3>${kind==='availability'?'Study availability':'Fixed commitments'}</h3>${state[kind].map(w=>`<p>${escape(w.title||'Study time')} · ${display(w.startAt)} – ${display(w.endAt)} <button data-remove="${escape(w.id)}" data-kind="${kind}">Remove</button></p>`).join('')||'<p>None entered.</p>'}`).join('')}<div class="actions"><button class="primary" data-plan>Preview plan</button><button class="soft" data-repair>Preview recovery</button>${canUndo(state)?'<button class="soft" data-undo>Undo accepted plan</button>':''}</div>${proposal?`<hr><h3>Proposed plan</h3><p>Your saved plan stays unchanged until you accept.</p>${proposalSummary(proposal,taskName)}<div class="actions"><button class="primary" data-accept>Accept plan</button><button class="soft" data-cancel>Cancel preview</button></div>`:''}<hr><h3>Saved study sessions</h3>${state.blocks.map(b=>`<article class="inset"><strong>${escape(taskName(b.taskId))}</strong><p>${display(b.startAt)} – ${display(b.endAt)} · ${escape(b.status)}${b.locked?' · Locked':''}</p>${b.status===BLOCK_STATUS.PLANNED?`<button data-lock="${escape(b.id)}">${b.locked?'Unlock':'Lock'}</button> <button data-partial="${escape(b.id)}">Record partial</button> <button data-done="${escape(b.id)}">Done</button> <button data-missed="${escape(b.id)}">Missed</button>`:''}</article>`).join('')||'<p>No accepted sessions yet.</p>'}`;
+    body.innerHTML=`<header class="planner-header"><div><span class="eyebrow">MAKE ROOM FOR YOUR WORK</span><h2 id="planner-title">Study plan</h2><p>Set your study hours and commitments in Philippine time (PHT).</p></div><button type="button" data-close aria-label="Close study plan">Close</button></header>
+      <div class="planner-stats" aria-label="Planning summary"><div><strong>${state.availability.length}</strong><span>Study windows</span></div><div><strong>${state.commitments.length}</strong><span>Commitments</span></div><div><strong>${state.blocks.length}</strong><span>Study sessions</span></div></div>
+      <section class="planner-section planner-builder" aria-labelledby="planner-add-title"><div class="planner-section-head"><h3 id="planner-add-title">Add time to your week</h3><p>Study windows are hours you can use. Commitments are hours to keep free.</p></div>
+        <form id="window-form"><div class="form-row"><label>I'm adding<select name="kind"><option value="availability">Time available to study</option><option value="commitments">A fixed commitment</option></select></label><label class="planner-title-field" hidden>Commitment name<input name="title" maxlength="180" disabled placeholder="e.g. Chemistry lecture"></label></div><div class="form-row three"><label>Date<input name="date" type="date" value="${escape(lastWindowDate)}" required></label><label>Start time<input name="start" type="time" required></label><label>End time<input name="end" type="time" required></label></div><p role="alert" id="window-error"></p><button class="soft" type="submit">Add to schedule</button></form>
+      </section>
+      <div class="planner-window-lists"><section class="planner-section" aria-labelledby="planner-availability-title"><div class="planner-section-head"><h3 id="planner-availability-title">Study availability</h3><span class="planner-count">${state.availability.length}</span></div>${windowList('availability')}</section><section class="planner-section" aria-labelledby="planner-commitments-title"><div class="planner-section-head"><h3 id="planner-commitments-title">Fixed commitments</h3><span class="planner-count">${state.commitments.length}</span></div>${windowList('commitments')}</section></div>
+      <section class="planner-section planner-preview" aria-labelledby="planner-preview-title"><div class="planner-section-head"><h3 id="planner-preview-title">Build your week</h3><p>Preview any changes before applying them to your calendar.</p></div><div class="actions"><button class="primary" data-plan>Preview plan</button><button class="soft" data-repair>Preview recovery</button>${canUndo(state)?'<button class="soft" data-undo>Undo accepted plan</button>':''}</div>${proposal?`<div class="planner-proposal"><h3 id="planner-proposal-title">Proposed changes</h3><p>Your saved plan stays unchanged until you accept.</p><div class="planner-proposal-details">${proposalSummary(proposal,taskName)}</div><div class="actions"><button class="primary" data-accept>Accept plan</button><button class="soft" data-cancel>Cancel preview</button></div></div>`:''}</section>
+      <section class="planner-section planner-sessions" aria-labelledby="planner-sessions-title"><div class="planner-section-head"><h3 id="planner-sessions-title">Saved study sessions</h3><span class="planner-count">${state.blocks.length}</span></div>${state.blocks.length?`<div class="planner-session-list">${[...state.blocks].sort((a,b)=>Date.parse(a.startAt)-Date.parse(b.startAt)).map(b=>`<article class="planner-session"><div><strong>${escape(taskName(b.taskId))}</strong><p>${display(b.startAt)} – ${new Date(b.endAt).toLocaleTimeString('en-PH',{timeZone:'Asia/Manila',hour:'numeric',minute:'2-digit'})} <span class="planner-session-status">${escape(b.status.replaceAll('_',' '))}${b.locked?' · Locked':''}</span></p></div>${b.status===BLOCK_STATUS.PLANNED?`<div class="actions"><button data-lock="${escape(b.id)}">${b.locked?'Unlock':'Lock'}</button><button data-partial="${escape(b.id)}">Record partial</button><button data-done="${escape(b.id)}">Done</button><button data-missed="${escape(b.id)}">Missed</button></div>`:''}</article>`).join('')}</div>`:'<p class="planner-empty">No accepted sessions yet. Add available hours, then preview a plan.</p>'}</section>`;
   }
+  body.addEventListener('change',e=>{
+    if(e.target.name!=='kind')return;
+    const isCommitment=e.target.value==='commitments';
+    const label=body.querySelector('.planner-title-field');
+    label.hidden=!isCommitment;
+    const input=label.querySelector('input');
+    input.disabled=!isCommitment;
+    input.required=isCommitment;
+  });
   body.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target);if(f.get('end')<=f.get('start')){body.querySelector('#window-error').textContent='End must be later than start on the same day.';return;}
-    const slot={startAt:parseInTimezone(f.get('date'),f.get('start')),endAt:parseInTimezone(f.get('date'),f.get('end'))};
-    if(f.get('kind')==='commitments'){const title=f.get('title').trim();if(!title){body.querySelector('#window-error').textContent='Give the commitment a title.';return;}state.commitments.push(createCommitment({...slot,title}));}
-    else state.availability.push(createWindow(slot));
-    save('Planning window saved.');});
+    try{
+      const slot={startAt:parseInTimezone(f.get('date'),f.get('start')),endAt:parseInTimezone(f.get('date'),f.get('end'))};
+      if(f.get('kind')==='commitments'){const title=f.get('title').trim();if(!title){body.querySelector('#window-error').textContent='Give the commitment a name.';return;}state.commitments.push(createCommitment({...slot,title}));}
+      else state.availability.push(createWindow(slot));
+      lastWindowDate=f.get('date');
+      save('Time added to your schedule.');
+    }catch(error){body.querySelector('#window-error').textContent=error.message;}
+  });
   body.addEventListener('click',e=>{e.stopPropagation();const d=e.target.closest('button')?.dataset;if(!d)return;
     if('close'in d)dialog.close();
-    else if('back'in d)render();
-    else if(d.remove){state[d.kind]=state[d.kind].filter(w=>w.id!==d.remove);save('Planning window removed.');}
-    else if('plan'in d||'repair'in d){proposal=('repair'in d?repairPlan:planWeek)(state,{now:new Date().toISOString()});render();}
-    else if('cancel'in d){proposal=null;render();}
+    else if('back'in d){render();focusInBody('#planner-sessions-title');}
+    else if(d.remove){state[d.kind]=state[d.kind].filter(w=>w.id!==d.remove);save('Time removed from your schedule.');}
+    else if('plan'in d||'repair'in d){proposal=('repair'in d?repairPlan:planWeek)(state,{now:new Date().toISOString()});render();focusInBody('#planner-proposal-title');}
+    else if('cancel'in d){proposal=null;render();focusInBody('[data-plan]');}
     else if('accept'in d&&proposal){acceptPlan(state,proposal,'plan');save('Study plan accepted.');}
     else if('undo'in d&&canUndo(state)){undoPlan(state);save('Previous study plan restored.');}
     else if(d.lock){const b=state.blocks.find(b=>b.id===d.lock);b.locked=!b.locked;save('Session lock updated.');}
-    else if(d.partial){const b=state.blocks.find(b=>b.id===d.partial);const t=state.tasks.find(t=>t.id===b.taskId),maximum=Math.min(diffMinutes(b.startAt,b.endAt),b.completedMinutes+t.remainingMinutes);if(maximum<=b.completedMinutes)return;body.innerHTML=`<button type="button" data-back>Back to study plan</button><h2>Record progress</h2><form id="progress-form"><label>Minutes completed in this session<input name="minutes" type="number" min="${b.completedMinutes+1}" max="${maximum}" required></label><button class="primary">Save progress</button></form>`;body.querySelector('form').addEventListener('submit',event=>{event.preventDefault();event.stopPropagation();progress(state,{blockId:b.id,completedMinutes:Number(new FormData(event.target).get('minutes')),status:BLOCK_STATUS.PARTIALLY_COMPLETED});save('Session progress saved. Preview recovery to schedule remaining work.');});}
+    else if(d.partial){const b=state.blocks.find(b=>b.id===d.partial);const t=state.tasks.find(t=>t.id===b.taskId),maximum=Math.min(diffMinutes(b.startAt,b.endAt),b.completedMinutes+t.remainingMinutes);if(maximum<=b.completedMinutes)return;body.innerHTML=`<div class="planner-progress"><button type="button" data-back>← Back to study plan</button><span class="eyebrow">SESSION PROGRESS</span><h2 id="planner-title">Record progress</h2><p>How much study time did you complete for <strong>${escape(taskName(b.taskId))}</strong>?</p><form id="progress-form"><label>Minutes completed in this session<input name="minutes" type="number" min="${b.completedMinutes+1}" max="${maximum}" required></label><p class="planner-progress-hint">Enter ${b.completedMinutes+1} to ${maximum} minutes.</p><button class="primary">Save progress</button></form></div>`;focusInBody('[name=minutes]');body.querySelector('form').addEventListener('submit',event=>{event.preventDefault();event.stopPropagation();progress(state,{blockId:b.id,completedMinutes:Number(new FormData(event.target).get('minutes')),status:BLOCK_STATUS.PARTIALLY_COMPLETED});save('Session progress saved. Preview recovery to schedule remaining work.');});}
     else if(d.done){progress(state,{blockId:d.done,status:BLOCK_STATUS.COMPLETED});save('Session marked done.');}
     else if(d.missed){progress(state,{blockId:d.missed,status:BLOCK_STATUS.MISSED});save('Session marked missed. Preview recovery to reschedule it.');}
   });
-  dialog.setAttribute('aria-label','Study plan');
+  dialog.setAttribute('aria-labelledby','planner-title');
   dialog.addEventListener('close',()=>{
     dialog.remove();
     persist('',true);
@@ -101,7 +138,7 @@ export function showPlanner(app, state, persist, selectedId=null) {
     (trigger||app.querySelector('[data-planner]'))?.focus({preventScroll:true});
   });render();dialog.showModal();
   if(selectedId){
-    const card=body.querySelector(`[data-lock="${CSS.escape(selectedId)}"]`)?.closest('article')||body.querySelector(`[data-remove="${CSS.escape(selectedId)}"]`)?.closest('p');
+    const card=body.querySelector(`[data-lock="${CSS.escape(selectedId)}"]`)?.closest('article')||body.querySelector(`[data-remove="${CSS.escape(selectedId)}"]`)?.closest('li');
     card?.scrollIntoView({block:'center'});
     card?.setAttribute('tabindex','-1');
     card?.focus({preventScroll:true});

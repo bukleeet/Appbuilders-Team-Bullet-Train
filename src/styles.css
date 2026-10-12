@@ -382,3 +382,105 @@ dialog{border-radius:15px;border-color:#dbe6ed;box-shadow:0 20px 80px #18384c36}
   .list-date{font-size:17px;padding:12px 14px;margin:22px 0 12px}
   .list-date+.muted{padding:0 14px 4px}
 }
+
+/* Study planning: clear input, review, and session-management stages. */
+#planner-dialog{width:min(880px,calc(100vw - 32px));max-height:92dvh;overflow-y:auto;overscroll-behavior:contain}
+#planner-dialog .dialog-body{padding:0}
+.planner-header{position:sticky;top:0;z-index:3;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;background:#fff;padding:26px 30px 23px;border-bottom:1px solid var(--line);box-shadow:0 2px 14px #163f5307}
+.planner-header .eyebrow{display:block;color:#37728b;font-weight:700;letter-spacing:1.2px;margin-bottom:9px}
+.planner-header h2{font-size:30px;color:var(--ink);font-weight:600;margin:0 0 7px}
+.planner-header p{font-size:13px;color:var(--muted-ink);margin:0;line-height:1.5}
+#planner-dialog .planner-header [data-close]{flex-shrink:0;margin:0;border-radius:9px;color:#39596a;font-size:12px;font-weight:700}
+.planner-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:#f2f7fa;padding:17px 30px;border-bottom:1px solid var(--line)}
+.planner-stats>div{padding:2px 24px;border-left:1px solid #d7e5ec}
+.planner-stats>div:first-child{border-left:0;padding-left:0}
+.planner-stats strong{display:block;color:#183c52;font:600 25px Georgia,'Times New Roman',serif;line-height:1.1}
+.planner-stats span{display:block;margin-top:5px;color:#526d7c;font-size:11px;font-weight:600}
+.planner-section{min-width:0;padding:27px 30px;border-bottom:1px solid var(--line)}
+.planner-section-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px 18px;flex-wrap:wrap;margin-bottom:15px}
+.planner-section-head h3{margin:0;font-size:19px;font-weight:600;color:var(--ink);letter-spacing:-.2px}
+.planner-section-head p{margin:3px 0 0;color:var(--muted-ink);font-size:12px;line-height:1.55;width:100%}
+.planner-builder{background:#fff}
+.planner-builder .form-row{gap:14px}
+.planner-builder label{margin:6px 0 12px;color:#355667;font-size:12px;font-weight:700}
+.planner-builder input,.planner-builder select{margin-top:8px;min-height:43px;background:#fff;border:1px solid #cfdee6;border-radius:8px;color:var(--ink)}
+.planner-builder input:focus,.planner-builder select:focus{border-color:#3987b3}
+.planner-title-field[hidden]{display:none!important}
+.planner-builder #window-error:empty{display:none}
+.planner-builder #window-error{color:#9a422b;font-size:12px;margin:0 0 12px}
+.planner-builder button[type=submit]{min-height:43px;border-radius:8px;background:#e7f2f8;border:1px solid #cbdfea;color:#164c68;font-size:13px;font-weight:700}
+.planner-builder button[type=submit]:hover{background:#d3e9f5}
+.planner-window-lists{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));background:#f7fafc;border-bottom:1px solid var(--line)}
+.planner-window-lists .planner-section{padding:25px 30px 27px;border-bottom:0}
+.planner-window-lists .planner-section+ .planner-section{border-left:1px solid var(--line)}
+.planner-window-lists .planner-section-head{align-items:center}
+.planner-window-lists .planner-section-head h3{font-size:16px}
+.planner-count{display:inline-grid;place-items:center;min-width:26px;height:26px;padding:0 7px;border-radius:14px;background:#e4eef4;color:#315b70;font:700 11px Arial,sans-serif}
+.planner-entries{list-style:none;margin:0;padding:0;display:grid;gap:9px;max-height:260px;overflow:auto}
+.planner-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 12px 12px 14px;border:1px solid #dfeaf0;border-radius:10px;background:#fff;min-width:0}
+.planner-entry>div{min-width:0;overflow-wrap:anywhere}
+.planner-entry strong,.planner-entry span{display:block;font-family:Arial,sans-serif}
+.planner-entry strong{font-size:12px;line-height:1.45;color:#1d4156}
+.planner-entry span{font-size:11px;color:#687e89;line-height:1.55;margin-top:3px}
+#planner-dialog .planner-entry [data-remove]{flex-shrink:0;border-radius:7px;margin:0;min-height:33px;padding:7px 9px;font-size:11px;color:#805041}
+#planner-dialog .planner-entry [data-remove]:hover{background:#fff3ef;border-color:#eacbbc}
+.planner-empty{padding:18px;margin:0;border-radius:9px;border:1px dashed #d2e0e8;background:#fff;color:#6c818d;font-size:12px;line-height:1.6}
+.planner-preview{background:#fff}
+.planner-preview>.actions{display:flex;gap:9px;flex-wrap:wrap}
+.planner-preview>.actions button{min-height:42px;border-radius:8px;font-size:12px;font-weight:700}
+.planner-preview>.actions .soft{background:#edf4f7;color:#365a6d}
+.planner-proposal{margin-top:22px;padding:20px 22px;border:1px solid #bdd8e6;border-radius:12px;background:#f2f8fb}
+.planner-proposal h3{font-size:17px;font-weight:600;color:#1c4e68;margin-bottom:6px}
+.planner-proposal>p{font-size:12px;color:#617a89;margin-bottom:13px}
+.planner-proposal-details{max-height:300px;overflow-y:auto;padding:15px 17px;background:#fff;border-radius:8px;border:1px solid #d7e6ee}
+.planner-proposal-details p{font-size:12px;line-height:1.65;color:#3b5b6d;margin-bottom:12px;overflow-wrap:anywhere}
+.planner-proposal-details p:last-child{margin-bottom:0}
+.planner-proposal>.actions{margin-top:15px;flex-wrap:wrap}
+.planner-proposal>.actions button{min-height:41px;border-radius:8px;font-size:12px;font-weight:700}
+.planner-sessions{border-bottom:0;padding-bottom:31px}
+.planner-session-list{display:grid;gap:9px;max-height:380px;overflow:auto}
+.planner-session{display:flex;align-items:center;justify-content:space-between;gap:12px 18px;padding:15px 16px;border:1px solid #e0eaf0;border-radius:10px;background:#fff}
+.planner-session>div:first-child{flex:1 1 160px;min-width:0;overflow-wrap:anywhere}
+.planner-session strong{display:block;font-size:13px;color:var(--ink)}
+.planner-session p{font-size:11px;color:#5b7482;margin:6px 0 0;line-height:1.6}
+.planner-session-status{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:5px;background:#edf3f6;color:#3e6477;text-transform:capitalize}
+.planner-session>.actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}
+.planner-session>.actions button{min-height:32px;padding:6px 9px;border-radius:7px;border:1px solid #dce6ec;background:#f7fafb;font-size:11px;color:#34566a}
+.planner-session>.actions button:hover{background:#e8f2f7}
+.planner-feedback{margin:0;padding:12px 30px;background:#e8f5ee;color:#216044;border-bottom:1px solid #cce8d8;font-size:13px;font-weight:600}
+.planner-feedback.warning{background:#fff3ef!important;color:#8e3e2a;border-color:#f0d1c3}
+.planner-feedback:focus{outline:2px solid #3781a5;outline-offset:-2px}
+.planner-progress{padding:30px;max-width:560px}
+.planner-progress [data-back]{display:block;margin:0 0 26px!important;border-radius:8px;color:#315b70}
+.planner-progress .eyebrow{display:block;margin-bottom:9px;color:#39758f;font-weight:700}
+.planner-progress h2{font-size:28px;color:var(--ink);font-weight:600;margin-bottom:8px}
+.planner-progress p{font-size:13px;color:var(--muted-ink)}
+.planner-progress label{font-weight:700;color:#34566a}
+.planner-progress input{max-width:300px;background:#fff;border-radius:8px}
+.planner-progress .planner-progress-hint{font-size:12px;margin:-6px 0 17px}
+.planner-progress .primary{border-radius:8px;min-height:43px}
+@media(max-width:700px){
+  #planner-dialog{width:calc(100vw - 16px);max-height:94dvh}
+  .planner-header{padding:20px 19px 17px;gap:10px}
+  .planner-header h2{font-size:25px}
+  .planner-header p{font-size:12px}
+  #planner-dialog .planner-header [data-close]{padding:7px 9px;min-height:32px;font-size:11px}
+  .planner-stats{padding:15px 19px}
+  .planner-stats>div{padding:1px 10px}
+  .planner-stats strong{font-size:23px}
+  .planner-stats span{font-size:10px}
+  .planner-section{padding:22px 19px}
+  .planner-builder .form-row{gap:0}
+  .planner-builder label{margin:5px 0 12px}
+  .planner-window-lists{grid-template-columns:1fr}
+  .planner-window-lists .planner-section{padding:21px 19px}
+  .planner-window-lists .planner-section+ .planner-section{border-left:0;border-top:1px solid var(--line)}
+  .planner-entries{max-height:220px}
+  .planner-preview>.actions button{flex:1 1 145px}
+  .planner-proposal{padding:17px 15px}
+  .planner-proposal>.actions button{flex:1 1 120px}
+  .planner-session{align-items:flex-start;flex-direction:column}
+  .planner-session>.actions{justify-content:flex-start}
+  .planner-feedback{padding:12px 19px}
+  .planner-progress{padding:23px 19px}
+}
