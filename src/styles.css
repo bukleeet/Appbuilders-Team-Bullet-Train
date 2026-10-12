@@ -391,13 +391,39 @@ dialog{border-radius:15px;border-color:#dbe6ed;box-shadow:0 20px 80px #18384c36}
 /* Keep the dense week calendar keyboard-accessible and the mobile list easy to scan. */
 .calendar:focus-visible,.calendar-scroll:focus-visible{outline:3px solid #2a7da5;outline-offset:-3px}
 .calendar-hint{padding:12px 16px;margin:0 0 12px;border:1px solid #d7e7ed;border-radius:10px;background:#eef6f8;color:#38596a;font-size:13px;line-height:1.5}
-.list-date{padding:13px 16px;margin:28px 0 14px;border-radius:9px;background:#edf4f7;color:var(--ink);font-size:19px;line-height:1.3}
-.list-date:first-child{margin-top:0}
-.list-date+.muted{padding:0 16px 8px;font-size:13px}
+.week-empty{display:flex;align-items:center;flex-wrap:wrap;gap:18px;padding:23px 26px;margin-bottom:18px;border:1px dashed #b8d3df;border-radius:13px;background:#f3f9fb}
+.week-empty-icon{display:grid;place-items:center;width:46px;height:46px;flex-shrink:0;background:#dcecf3;border-radius:12px}
+.week-empty-icon .icon{width:24px;height:24px}
+.week-empty>div:nth-child(2){flex:1;min-width:170px}
+.week-empty h2{font-size:20px;margin:0 0 5px}
+.week-empty p{font-size:13px;color:var(--muted-ink);margin:0}
+.week-empty .primary{min-height:44px}
+.week-agenda{padding:3px 25px}
+.week-day{padding:24px 0;border-bottom:1px solid var(--line)}
+.week-day:last-child{border-bottom:0}
+.week-day-today{padding-left:17px;margin-left:-20px;border-left:3px solid #5a9db7;background:linear-gradient(90deg,#f0f8fb,transparent 75%)}
+.week-day-heading,.week-day-title{display:flex;align-items:center;flex-wrap:wrap;gap:10px 15px}
+.week-day-heading{justify-content:space-between}
+.list-date{margin:0;color:var(--ink);font-size:20px;line-height:1.35}
+.week-today-badge{font:700 10px/1.4 Arial,sans-serif;letter-spacing:.7px;text-transform:uppercase;padding:5px 8px;border-radius:5px;background:#d5ebf3;color:#165b77}
+.week-day-meta{color:var(--muted-ink);font-size:12px;white-space:normal}
+.week-day-sessions{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,315px),1fr));gap:14px 16px;padding-top:17px}
+.week-day-sessions .agenda-row{padding:0;min-width:0}
+.week-day-sessions .agenda-card{height:100%}
+.week-day-sessions .agenda-card h3{overflow-wrap:anywhere}
+.week-day-sessions .agenda-card-bottom{flex-wrap:wrap}
+.week-day-empty{margin:10px 0 0;font-size:13px;color:var(--muted-ink)}
 @media(min-width:1001px){.calendar-hint{display:none}}
 @media(max-width:700px){
-  .list-date{font-size:17px;padding:12px 14px;margin:22px 0 12px}
-  .list-date+.muted{padding:0 14px 4px}
+  .week-empty{padding:18px;gap:12px}
+  .week-empty .primary{width:100%}
+  .week-agenda{padding:0 17px}
+  .week-day{padding:19px 0}
+  .week-day-today{padding-left:12px;margin-left:-14px}
+  .list-date{font-size:17px}
+  .week-day-heading{align-items:flex-start;gap:7px}
+  .week-day-meta{width:100%;font-size:11px}
+  .week-day-sessions{grid-template-columns:minmax(0,1fr);gap:10px;padding-top:12px}
 }
 
 /* Study planning: clear input, review, and session-management stages. */
