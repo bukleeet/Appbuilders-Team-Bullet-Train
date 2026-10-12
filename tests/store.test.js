@@ -10,6 +10,7 @@ import {
   loadState,
   saveState,
   exportState,
+  parseImportState,
   importState,
   acceptPlan,
   undoPlan,
@@ -176,6 +177,32 @@ test('store.js: import/export validation rejects invalid data without overwritin
   const res = importState(JSON.stringify(newImportState), storage);
   assert.equal(res.success, true);
   assert.equal(loadState(storage).tasks[0].title, 'Imported Success');
+});
+
+test('store.js: backup inspection validates without replacing stored work', () => {
+  const storage = createMockStorage();
+  const current = createAppState({tasks:[createTask({id:'current',title:'Keep this work',remainingMinutes:20})]});
+  const incoming = createAppState({tasks:[createTask({id:'incoming',title:'Preview only',remainingMinutes:30})]});
+  saveState(current, storage);
+
+  const parsed = parseImportState(JSON.stringify(incoming));
+  assert.equal(parsed.tasks[0].title, 'Preview only');
+  assert.equal(loadState(storage).tasks[0].title, 'Keep this work');
+  assert.throws(() => parseImportState('{broken'), ValidationError);
+  assert.throws(() => parseImportState(JSON.stringify({...incoming, schemaVersion:1})), ValidationError);
+  assert.equal(loadState(storage).tasks[0].title, 'Keep this work');
+});
+
+test('store.js: failed backup persistence leaves the existing backup intact', () => {
+  const current = createAppState({tasks:[createTask({id:'saved',title:'Original task',remainingMinutes:25})]});
+  const incoming = createAppState({tasks:[createTask({id:'new',title:'New task',remainingMinutes:40})]});
+  const storage = createMockStorage();
+  saveState(current, storage);
+  const savedJson=storage.getItem(STORAGE_KEY_V2);
+  const failingStorage={...storage,setItem(){throw new Error('Storage full');}};
+
+  assert.throws(() => importState(JSON.stringify(incoming),failingStorage), StorageError);
+  assert.equal(storage.getItem(STORAGE_KEY_V2),savedJson);
 });
 
 test('store.js: plan acceptance and atomic undo', () => {

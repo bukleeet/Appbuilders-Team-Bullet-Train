@@ -341,13 +341,11 @@ export function exportState(state) {
 }
 
 /**
- * Imports AppState from JSON string.
- * Validates schemaVersion and data integrity without overwriting existing data if validation fails.
+ * Parses and validates an AppState backup without changing storage.
  * @param {string} jsonString
- * @param {object} [customStorage]
- * @returns {{ success: boolean, state: import('./model.js').AppState }}
+ * @returns {import('./model.js').AppState}
  */
-export function importState(jsonString, customStorage) {
+export function parseImportState(jsonString) {
   if (typeof jsonString !== 'string' || !jsonString.trim()) {
     throw new ValidationError('Import failed: Input is empty');
   }
@@ -374,7 +372,17 @@ export function importState(jsonString, customStorage) {
     throw new ValidationError('Import failed: Data structure does not match contract', validation.errors);
   }
 
-  // Only persist once validation passes completely
+  return parsed;
+}
+
+/**
+ * Validates a backup before persisting it, leaving existing data untouched on failure.
+ * @param {string} jsonString
+ * @param {object} [customStorage]
+ * @returns {{ success: boolean, state: import('./model.js').AppState }}
+ */
+export function importState(jsonString, customStorage) {
+  const parsed = parseImportState(jsonString);
   saveState(parsed, customStorage);
   return { success: true, state: parsed };
 }

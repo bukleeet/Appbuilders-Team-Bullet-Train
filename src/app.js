@@ -1,6 +1,6 @@
 import {getAIStatus, warmupAI} from './ai-client.js';
 import {showTaskForm} from './task-capture.js';
-import { loadState, saveState, exportState, importState, acceptPlan, undoPlan, ValidationError } from './store.js';
+import { loadState, saveState, exportState, parseImportState, importState, acceptPlan, undoPlan, ValidationError } from './store.js';
 import { createTask, generateId, BLOCK_STATUS } from './model.js';
 import { parseInTimezone, toLocalDateAndTime } from './dates.js';
 import { createDemoFixtures } from './fixtures.js';
@@ -10,9 +10,10 @@ import { assistantPage } from './assistant-ui.js';
 import { sortedTasks, matchesTask } from './task-list.js';
 
 let state = loadState(), page = 'Today', preview = null, selected = null, active = null;
-let agendaMode = 'timeline', weekMode = 'grid', offset = 0, notice = '', failed = false, warn = false;
+let agendaMode = 'timeline', weekMode = window.matchMedia('(max-width: 700px)').matches ? 'list' : 'grid', offset = 0, notice = '', failed = false, warn = false;
 let assistantDraft='';
 let taskQuery='', taskFilter='all';
+let pendingImport=null;
 const ai={ready:false,models:[],error:null,label:'Checking local AI…'};
 let probeSequence=0;
 async function probe() {
@@ -79,7 +80,19 @@ function render() {
   const calendarScroll = app.querySelector('.calendar-scroll');
   if (calendarScroll) calendarScroll.scrollTop = previousScroll ?? 8 * 120;
   const calendar = app.querySelector('.calendar');
-  if (calendar && previousHorizontalScroll !== undefined) calendar.scrollLeft = previousHorizontalScroll;
+  if (calendar) {
+    calendar.tabIndex=0;
+    calendar.setAttribute('role','region');
+    calendar.setAttribute('aria-label','Weekly calendar. Scroll horizontally to view all seven days.');
+    if (previousHorizontalScroll !== undefined) calendar.scrollLeft = previousHorizontalScroll;
+    const hours=calendar.querySelector('.calendar-scroll');
+    hours.tabIndex=0;
+    hours.setAttribute('role','region');
+    hours.setAttribute('aria-label','Hourly calendar. Scroll vertically to view later sessions.');
+    if(window.matchMedia('(max-width: 1000px)').matches){
+      calendar.insertAdjacentHTML('beforebegin','<p class="calendar-hint">Swipe sideways to see all seven days, or switch to List view for a simpler schedule.</p>');
+    }
+  }
   if (page === 'Tasks') updateTaskResults();
   const detail = app.querySelector('.detail-drawer');
   if (detail) app.append(app.querySelector('.drawer-backdrop'),detail);
@@ -176,12 +189,13 @@ function recovery() {
 function showTask(t=null,text='') { showTaskForm(app,state,persist,ai,t,text); }
 function confirmAction(title, text, action, value = '') {
   const trigger=document.activeElement;
-  app.insertAdjacentHTML('beforeend', `<dialog id="confirmation-dialog" aria-labelledby="confirmation-title" aria-describedby="confirmation-description"><div class="confirm-symbol" aria-hidden="true">${icon('triangle-alert')}</div><h2 id="confirmation-title">${esc(title)}</h2><p id="confirmation-description">${esc(text)}</p><div class="actions"><button class="soft" data-close-dialog>Keep current data</button><button class="danger" data-${action}="${esc(value)}">${action==='confirm-delete'?'Delete task':'Load sample week'}</button></div></dialog>`);
+  app.insertAdjacentHTML('beforeend', `<dialog id="confirmation-dialog" aria-labelledby="confirmation-title" aria-describedby="confirmation-description"><div class="confirm-symbol" aria-hidden="true">${icon('triangle-alert')}</div><h2 id="confirmation-title">${esc(title)}</h2><p id="confirmation-description">${esc(text)}</p><div class="actions"><button class="soft" data-close-dialog>Keep current data</button><button class="danger" data-${action}="${esc(value)}">${action==='confirm-delete'?'Delete task':action==='confirm-import'?'Import and replace':'Load sample week'}</button></div></dialog>`);
   const dialog = app.querySelector('#confirmation-dialog');
   dialog.confirmTrigger=trigger;
   dialog.showModal();
   dialog.querySelector('[data-close-dialog]').focus();
   dialog.addEventListener('close', () => {
+    if(action==='confirm-import')pendingImport=null;
     dialog.remove();
     if(dialog.returnValue!=='confirmed')restoreDialogFocus(trigger);
   });
@@ -239,10 +253,27 @@ app.addEventListener('click',e=>{
   else if(d.confirmDelete){const trigger=finishConfirmation();deleteTask(state,d.confirmDelete);persist('Task deleted.');restoreDialogFocus(trigger);}
   else if('sample'in d) confirmAction('Load sample week?', 'This replaces your current tasks. Export a backup first if you want to keep them.', 'confirm-sample');
   else if('confirmSample'in d){const trigger=finishConfirmation();state=createDemoFixtures();preview=null;selected=null;taskQuery='';taskFilter='all';persist('Sample week loaded.');restoreDialogFocus(trigger);}
-  else if('import'in d)document.querySelector('#import-file')?.click();
+  else if('confirmImport'in d){
+    const backup=pendingImport,trigger=finishConfirmation();pendingImport=null;
+    try {
+      if(!backup)throw new ValidationError('No backup selected.');
+      state=importState(backup).state;
+      preview=null;selected=null;active=null;taskQuery='';taskFilter='all';failed=false;warn=false;notice='Backup imported and saved on this device.';
+    }catch(err){warn=true;notice=`Import failed. Your current workspace was kept. ${err.message}${err.errors?.length?` (${err.errors[0]})`:''}`;}
+    render();restoreDialogFocus(trigger);
+  }
+  else if('import'in d){const input=document.querySelector('#import-file');if(input){input.value='';input.click();}}
   else if('export'in d){try{const url=URL.createObjectURL(new Blob([exportState(state)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='waypoint-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(err){notice=`Export failed: ${err.errors?.[0]||err.message}`;warn=true;render();}}
 });
-app.addEventListener('change',async e=>{if(e.target.id!=='import-file'||!e.target.files[0])return;try{state=importState(await e.target.files[0].text()).state;preview=null;selected=null;taskQuery='';taskFilter='all';failed=false;warn=false;notice='Backup imported.';}catch(err){warn=true;notice=`${err.message}${err.errors?.length?` (${err.errors[0]})`:''}`;}render();});
+app.addEventListener('change',async e=>{
+  if(e.target.id!=='import-file'||!e.target.files[0])return;
+  try {
+    const backup=await e.target.files[0].text();
+    const incoming=parseImportState(backup);
+    pendingImport=backup;
+    confirmAction('Replace your workspace?',`This backup contains ${incoming.tasks.length} tasks and ${incoming.blocks.length} study sessions. Importing it replaces your current ${state.tasks.length} tasks and calendar. Export a backup first if you want to keep them.`, 'confirm-import');
+  }catch(err){pendingImport=null;warn=true;notice=`${err.message}${err.errors?.length?` (${err.errors[0]})`:''}`;render();}
+});
 app.addEventListener('input',e=>{if(e.target.matches('[data-task-search]')){taskQuery=e.target.value;updateTaskResults();}else if(e.target.id==='assistant-draft'){assistantDraft=e.target.value;resizeAssistantDraft();}});
 window.addEventListener('resize',resizeAssistantDraft);
 app.addEventListener('submit',e=>{
