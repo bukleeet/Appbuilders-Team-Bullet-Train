@@ -127,7 +127,13 @@ export function showTaskForm(app,state,persist,ai,task=null,initialText=''){
   const captureArea=dialog.querySelector('#capture-text');
   captureArea.addEventListener('focus',()=>{warmupAI().catch(()=>{});});
 
-  dialog.addEventListener('close',()=>{controller?.abort();dialog.remove();});
+  dialog.addEventListener('close',()=>{
+    controller?.abort();dialog.remove();
+    const trigger=task?[...app.querySelectorAll('[data-edit]')].find(button=>button.dataset.edit===task.id):app.querySelector('[data-add]');
+    const fallback=app.querySelector('#main-content h1');
+    if(fallback)fallback.tabIndex=-1;
+    (trigger||fallback)?.focus({preventScroll:true});
+  });
   dialog.addEventListener('click',async e=>{
     e.stopPropagation();
     const d=e.target.closest('button')?.dataset;

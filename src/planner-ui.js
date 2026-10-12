@@ -94,6 +94,16 @@ export function showPlanner(app, state, persist, selectedId=null) {
     else if(d.missed){progress(state,{blockId:d.missed,status:BLOCK_STATUS.MISSED});save('Session marked missed. Preview recovery to reschedule it.');}
   });
   dialog.setAttribute('aria-label','Study plan');
-  dialog.addEventListener('close',()=>{dialog.remove();persist('',true);});render();dialog.showModal();
-  if(selectedId){const card=body.querySelector(`[data-lock="${CSS.escape(selectedId)}"]`)?.closest('article');card?.scrollIntoView({block:'center'});card?.setAttribute('tabindex','-1');card?.focus();}
+  dialog.addEventListener('close',()=>{
+    dialog.remove();
+    persist('',true);
+    const trigger=selectedId&&[...app.querySelectorAll('[data-detail],[data-planner]')].find(button=>button.dataset.detail===selectedId||button.dataset.planner===selectedId);
+    (trigger||app.querySelector('[data-planner]'))?.focus({preventScroll:true});
+  });render();dialog.showModal();
+  if(selectedId){
+    const card=body.querySelector(`[data-lock="${CSS.escape(selectedId)}"]`)?.closest('article')||body.querySelector(`[data-remove="${CSS.escape(selectedId)}"]`)?.closest('p');
+    card?.scrollIntoView({block:'center'});
+    card?.setAttribute('tabindex','-1');
+    card?.focus({preventScroll:true});
+  }
 }
