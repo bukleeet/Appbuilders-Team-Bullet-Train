@@ -351,6 +351,7 @@ input::placeholder, textarea::placeholder { color: #6b8192; opacity: 1; }
 .recovery-stats strong { color: var(--blue); }
 .protected-note { color: #406046; background: #e5efe5; border-color: #c4d8c5; }
 .assistant-empty { background: #eaf3fc; border-color: #c6d9e7; border-radius: 8px; }
+.assistant-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 14px; }
 .assistant-prompts .soft { background: #e5f0fa; }
 .assistant-composer textarea { background: #f5faff; }
 .dialog-head, .dialog-footer { border-color: var(--line); }
