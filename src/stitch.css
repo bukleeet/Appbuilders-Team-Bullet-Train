@@ -381,6 +381,30 @@ input::placeholder, textarea::placeholder { color: #6b8192; opacity: 1; }
 .planner-session > .actions button { color: #31566b; background: #e8f2fb; border-color: #c3d8e7; }
 .planner-session > .actions button:hover { background: #fff; }
 
+/* Keep the Week actions visible alongside the desktop sidebar at tablet widths. */
+@media (min-width: 701px) and (max-width: 1000px) {
+  .topbar:has(.date-controls) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px 12px;
+  }
+
+  .topbar .date-controls {
+    grid-column: 1 / -1;
+    min-width: 0;
+    justify-content: space-between;
+  }
+
+  .topbar:has(.date-controls) .connection {
+    grid-column: 1;
+    margin-left: 0;
+  }
+
+  .topbar:has(.date-controls) .add-task {
+    grid-column: 2;
+  }
+}
+
 @media (max-width: 700px) {
   .sidebar {
     background: rgba(40, 92, 121, .98);
