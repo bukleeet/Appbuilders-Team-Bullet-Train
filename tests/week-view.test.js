@@ -1,6 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { groupWeekDays, renderWeekList } from '../src/week-view.js';
+import { calendarHours, groupWeekDays, renderWeekList } from '../src/week-view.js';
+
+test('calendar starts at useful daytime hours and can show the full day', () => {
+  const sessions = [{ time: '09:30', sessionMinutes: 75 }];
+  assert.deepEqual(calendarHours(sessions), { startHour: 7, endHour: 22 });
+  assert.deepEqual(calendarHours(sessions, true), { startHour: 0, endHour: 24 });
+});
+
+test('calendar expands for early, late, and overnight commitments', () => {
+  const sessions = [
+    { time: '05:45', kind: 'fixed', minutes: 90 },
+    { time: '23:30', sessionMinutes: 120 },
+  ];
+  assert.deepEqual(calendarHours(sessions), { startHour: 5, endHour: 26 });
+  assert.deepEqual(calendarHours(sessions, true), { startHour: 0, endHour: 26 });
+  assert.deepEqual(calendarHours([{ time: '00:00', minutes: 30 }]), { startHour: 0, endHour: 22 });
+});
 
 test('week agenda groups sessions by the displayed seven days and counts study time only', () => {
   const sessions = [
