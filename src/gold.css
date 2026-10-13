@@ -1548,6 +1548,17 @@ main > .recovery-shell {
   }
 }
 
+@media (min-width: 701px) and (max-width: 860px) {
+  .right-column {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .right-column .task-queue,
+  .right-column .local-footer {
+    grid-column: auto;
+  }
+}
+
 @media (max-width: 700px) {
   :root {
     --sidebar: 0px;
