@@ -160,7 +160,7 @@ input::placeholder, textarea::placeholder { color: #6b8192; opacity: 1; }
   box-shadow: none;
 }
 
-.brand-logo { filter: brightness(1.1) saturate(.8); }
+.brand-logo { filter: brightness(0) invert(1); }
 .brand span { color: #fff; }
 .brand small { color: var(--nav-muted); }
 .sidebar-label { color: #bdd7e7; }
