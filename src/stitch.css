@@ -1,0 +1,403 @@
+/*
+ * Google Stitch palette comparison — intentionally isolated on reformat-ui-palette.
+ * The reference is a design-system image, so its colors, Inter typography,
+ * cool-blue cards and rectangular controls are applied to Waypoint's real UI.
+ * Loaded after gold.css to preserve the existing application's behavior.
+ */
+
+:root {
+  --paper: #dbe7f3;
+  --paper-strong: #e9f2fb;
+  --paper-soft: #d1dfed;
+  --surface: #f6faff;
+  --surface-muted: #e7f0f9;
+  --ink: #202a32;
+  --muted-ink: #526576;
+  --quiet-ink: #728597;
+  --nav: #285c79;
+  --nav-raised: #194a65;
+  --nav-text: #f4f9fe;
+  --nav-muted: #c3d9e7;
+  --accent: #285c79;
+  --accent-dark: #19465f;
+  --accent-soft: #d8e9f7;
+  --sage: #6c7d6e;
+  --sage-soft: #e4ede4;
+  --blue: #285c79;
+  --blue-soft: #dcebf7;
+  --terracotta: #bd6b54;
+  --line: #c7d7e6;
+  --line-strong: #aec3d4;
+  --shadow-sm: 0 1px 3px rgba(32, 42, 50, .035);
+  --shadow-md: 0 8px 28px rgba(40, 92, 121, .095);
+  --shadow-lg: 0 25px 65px rgba(22, 49, 68, .23);
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  color-scheme: light;
+  font-family: Inter, "Segoe UI Variable Text", "Segoe UI", Arial, sans-serif;
+}
+
+html { scrollbar-color: #94b0c4 transparent; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* The warm, textured VibeCurb background is replaced with Stitch's flat canvas. */
+body::before { display: none; }
+::selection { color: white; background: var(--blue); }
+
+h1, h2, h3, .brand span, .mobile-brand,
+.week-summary strong, .task-overview strong, .planner-stats strong {
+  font-family: Inter, "Segoe UI Variable Display", "Segoe UI", Arial, sans-serif;
+  color: var(--ink);
+  font-weight: 700;
+  letter-spacing: -.035em;
+}
+
+h1 {
+  font-size: clamp(2.35rem, 4.2vw, 3.75rem);
+  line-height: 1.04;
+  letter-spacing: -.05em;
+}
+
+.eyebrow, .sidebar-label, .topbar-context, .calendar-range-label,
+.task-table-head, .planner-header .eyebrow, .planner-progress .eyebrow,
+.overdue-kicker, .week-today-badge, .planner-count, .course-tag {
+  font-family: Inter, "Segoe UI Variable Text", "Segoe UI", Arial, sans-serif;
+  letter-spacing: .07em;
+}
+
+.eyebrow, .page-meta, .calendar-range-label, .topbar-context {
+  color: #587184;
+}
+
+.page-meta b, .hero-meta > b, .calendar-range strong { color: var(--blue); }
+.page-description { color: var(--muted-ink); }
+
+button, input, textarea, select,
+.brand small, .planner-entry strong, .planner-entry span {
+  font-family: Inter, "Segoe UI Variable Text", "Segoe UI", Arial, sans-serif;
+}
+
+button {
+  border-radius: var(--radius-sm);
+  transition: background-color .16s ease, border-color .16s ease,
+    box-shadow .16s ease, color .16s ease, transform .16s ease;
+}
+
+button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, a:focus-visible,
+.calendar:focus-visible, .calendar-scroll:focus-visible {
+  outline: 3px solid #4e91b7;
+  outline-offset: 3px;
+}
+
+.primary {
+  color: #fff;
+  background: var(--blue);
+  border-color: var(--blue);
+  box-shadow: none;
+}
+
+.primary:not(:disabled):hover {
+  color: #fff;
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+  box-shadow: 0 5px 12px rgba(40, 92, 121, .14);
+  transform: translateY(-1px);
+}
+
+.soft {
+  color: #294e65;
+  background: #e2edf8;
+  border: 1px solid #bfd2e4;
+  box-shadow: none;
+}
+
+.soft:not(:disabled):hover {
+  color: #173f56;
+  background: #f5faff;
+  border-color: #8eb1cc;
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+.text-button, .text-button:hover { color: var(--accent-dark); }
+.compact, .icon-button { border-radius: 5px; }
+
+.danger, .danger:hover {
+  color: white;
+  background: #a63e32;
+  border-color: #a63e32;
+}
+.danger:hover { background: #883025; }
+
+input, textarea, select {
+  color: var(--ink);
+  background: #eaf3fc;
+  border-color: var(--line-strong);
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+input:hover, textarea:hover, select:hover { border-color: #83a8c2; }
+input:focus, textarea:focus, select:focus {
+  background: #fff;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(40, 92, 121, .11);
+}
+
+input::placeholder, textarea::placeholder { color: #6b8192; opacity: 1; }
+
+/* Deep blue navigation, with compact, rectangular selected treatments. */
+.sidebar {
+  background: var(--nav);
+  border-right: 1px solid #1b4a64;
+  box-shadow: none;
+}
+
+.brand-logo { filter: brightness(1.1) saturate(.8); }
+.brand span { color: #fff; }
+.brand small { color: var(--nav-muted); }
+.sidebar-label { color: #bdd7e7; }
+
+.nav-item {
+  color: #d6e5ef;
+  border-radius: 6px;
+}
+
+.nav-item:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .12);
+  border-color: rgba(255, 255, 255, .11);
+}
+
+.nav-item.selected {
+  color: var(--nav);
+  background: #eaf3fc;
+  border-color: #eaf3fc;
+}
+
+.nav-item.selected::before { background: var(--terracotta); }
+.nav-item.selected .icon { filter: none; opacity: 1; }
+.sidebar-footer { color: #d5e5f0; border-top-color: rgba(255,255,255,.19); }
+.sidebar-footer strong { color: #fff; }
+.sidebar-footer small { color: #b3d0e0; }
+
+.topbar {
+  background: rgba(234, 243, 252, .96);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+}
+
+.topbar-context > span { color: #91abc0; }
+.pill { border-radius: 6px; }
+.saved { color: #3b5941; background: #e3eee4; border-color: #c7d8c9; }
+.saved::before { background: var(--sage); }
+.model { color: #294e65; background: #dceaf7; border-color: #bfd3e5; }
+.error-pill { color: #873c2d; background: #f8e1d8; border-color: #eac3b4; }
+.week-switch { background: #dceaf7; border-color: #b8cede; border-radius: 6px; }
+.week-switch span { color: var(--blue); }
+.week-switch button:hover { background: #c9ddeb; }
+
+/* Cool, lightly outlined surfaces like the Stitch component board. */
+.panel, .hero, .calendar, .recovery-shell,
+.week-summary, .week-empty, .overdue-reminder {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.panel-title p, .hero-kicker, .hero-meta, .remaining,
+.panel-foot, .calendar-range-help, .task-results,
+.task-table-head, .settings-grid p { color: var(--muted-ink); }
+
+.hero { border-left-color: var(--line); }
+.hero::before { background: var(--blue); }
+.hero.sage::before { background: var(--sage); }
+.hero.terracotta::before { background: var(--terracotta); }
+.hero.empty { background: #eaf3fc; }
+.hero.empty::before { background: var(--blue); }
+.hero h2, .panel-title h2 { color: var(--ink); }
+
+.course-tag {
+  color: #214f6c;
+  background: var(--blue-soft);
+  border-color: #b6d0e3;
+  border-radius: 4px;
+}
+
+.immediate-step, .inset, .preview-notice, .move-card, .protected-note {
+  background: #e6f0f9;
+  border: 1px solid #c3d7e7;
+  border-radius: 7px;
+}
+
+.immediate-step small, .remaining strong { color: #96503d; }
+.immediate-step p { color: var(--ink); }
+.progress-actions button { color: #31556c; background: #eaf3fc; border-color: #c3d6e5; border-radius: 6px; }
+.progress-actions button:hover { background: #fff; border-color: #9ebacf; }
+.empty-icon, .week-empty-icon { color: var(--blue); background: #dcebf7; border-color: #bad0e2; border-radius: 10px; }
+.empty-list { background: #eaf3fc; border-color: #c4d8e8; border-radius: 7px; }
+
+.segmented, .task-filters {
+  background: #dce9f5;
+  border: 1px solid #bfd2e3;
+  border-radius: 6px;
+}
+
+.segmented button, .task-filters button { color: #3e6077; border-radius: 4px; }
+.segmented button:hover { background: #ecf5fd; }
+.segmented .chosen, .task-filters button.chosen {
+  color: #fff;
+  background: var(--blue);
+  box-shadow: none;
+}
+
+.timeline .agenda-row::before { border-left-color: #c7d8e6; }
+.timeline-marker { color: var(--blue); background: #e2eff9; border-color: #c3d8e9; }
+.timeline-marker.complete { color: #455f49; background: #e4eee4; }
+.timeline-marker.current {
+  background: var(--blue);
+  border-color: #fff;
+  box-shadow: 0 0 0 1px var(--blue);
+}
+.agenda-card { background: #f1f7fd; border-color: #c7d8e6; border-radius: 7px; }
+.agenda-card:hover { border-color: #91b4cd; box-shadow: var(--shadow-md); }
+.agenda-card.current-card { border-left-color: var(--blue); }
+.agenda-card.fixed-card { background: #e5eee7; border-color: #bfcebf; }
+.status-tag { color: #476074; background: #ddeaf5; border-radius: 4px; }
+.complete .status-tag { color: #3d6344; background: var(--sage-soft); }
+.next-action { background: #e7f0f9; }
+.deadline-card { background: #ecf4fb; border-color: #c7d9e8; border-radius: 7px; }
+.deadline-card:hover { background: #fff; border-color: #91b4cd; box-shadow: var(--shadow-sm); }
+.due-tag { color: #31546a; background: #d9e7f2; border-radius: 4px; }
+.progress-track { background: #ccdeea; }
+.progress-track > span { background: var(--sage); }
+.queue-item { border-color: #d2e0eb; }
+.local-footer { color: #436274; background: #e4edf5; border-color: #c4d5e4; border-radius: 7px; }
+
+.overdue-reminder { background: #f8eee9; border-left: 4px solid var(--terracotta); }
+.overdue-kicker, .overdue-heading h2, .overdue-minutes { color: #894734; }
+.overdue-heading p, .overdue-more { color: #76574b; }
+.overdue-heading .soft { color: #854733; background: #fff5ef; border-color: #deb6a5; }
+.overdue-item { background: #fff9f5; border-color: #e6c8b9; border-radius: 6px; }
+.overdue-item:hover { background: #fff; border-color: #cd9e87; }
+
+.week-summary > div:not(.week-tools) { border-color: #c9d9e8; }
+.week-summary strong, .task-overview strong { color: var(--ink); }
+.week-summary strong small { color: #5e778b; font-family: inherit; }
+.week-empty { background: #eaf3fc; }
+.week-day { border-color: #ccdde9; }
+.week-day-today { border-left-color: var(--blue); background: #e6f1fa; }
+.week-today-badge { color: #fff; background: var(--blue); border-radius: 4px; }
+
+.calendar-toolbar, .task-toolbar {
+  background: #e4eff8;
+  border: 1px solid #bfd3e3;
+  border-radius: 7px;
+}
+.calendar-head { color: var(--ink); background: #dceaf7; border-bottom-color: #bfd3e3; }
+.calendar-head > div { border-right-color: #bfd3e3; }
+.calendar-head .current-day { color: #fff; background: var(--blue); }
+.calendar-head .current-day small { color: #e3eff8; }
+.calendar-head small { color: #536e81; font-family: inherit; }
+.calendar-head b { font-family: inherit; }
+.calendar-scroll { background: #f6faff; scrollbar-color: #a1bbce #e9f2fa; }
+.time-gutter { background: #e4eff8; border-right-color: #c5d7e6; }
+.time-gutter > span { color: #567084; font-family: inherit; }
+.day-column {
+  border-left-color: #cbdce9;
+  background: repeating-linear-gradient(to bottom, transparent 0, transparent 119px, #d8e6f1 119px, #d8e6f1 120px), #f6faff;
+}
+.calendar-block {
+  color: #223f51;
+  background: #e3f0fa;
+  border-color: #b6d0e3;
+  border-left-color: var(--blue);
+  border-radius: 5px;
+  box-shadow: none;
+}
+.calendar-block:hover { background: #fff; border-color: #8fb4ce; border-left-color: var(--blue); box-shadow: var(--shadow-md); }
+.calendar-block.sage { border-left-color: var(--sage); }
+.calendar-block.terracotta { border-left-color: var(--terracotta); }
+.calendar-block.fixed-block { background: #e4eee6; border-color: #bccdbe; border-left-color: var(--sage); }
+.calendar-legend { color: #547083; }
+.fixed-color { background: var(--sage); border-color: var(--sage); }
+.blue-color { background: var(--blue); }
+
+.drawer-backdrop, dialog::backdrop { background: rgba(24, 48, 65, .52); }
+.detail-drawer, dialog { background: var(--surface); border-color: #b5cede; border-radius: 12px; }
+.task-overview span { color: #526b7d; background: #f4f9fe; border-color: #c2d7e7; border-radius: 7px; }
+.task-overview .task-overdue-count { color: #8c4835; background: #f9e8e0; border-color: #e7bfae; }
+.task-overview .task-overdue-count strong { color: #8c4835; }
+.task-toolbar input, .task-sort-label select { background: #f6faff; border-color: #abc5d8; }
+.task-table-row { border-color: #d1e0ec; }
+.task-table-row:hover { background: #eaf3fc; }
+.status-tag.overdue { color: #8b3f2b; background: #f9e6dc; border-color: #e9b9a6; }
+.task-empty-filter { border-color: var(--line); }
+.settings-grid hr { border-color: #cfdfea; }
+.notice, .planner-feedback { color: #3f6045; background: #e2eee4; border-color: #c3d8c7; border-radius: 7px; }
+.warning, .planner-feedback.warning { color: #83402e !important; background: #fbe9df !important; border-color: #e5bcaa !important; }
+.undo-button { color: #83402e; }
+
+.recovery-heading, .recovery-footer, .dialog-footer,
+.dialog-head, .planner-stats, .planner-window-lists { background: #e4eff9; }
+.recovery-stats strong { color: var(--blue); }
+.protected-note { color: #406046; background: #e5efe5; border-color: #c4d8c5; }
+.assistant-empty { background: #eaf3fc; border-color: #c6d9e7; border-radius: 8px; }
+.assistant-prompts .soft { background: #e5f0fa; }
+.assistant-composer textarea { background: #f5faff; }
+.dialog-head, .dialog-footer { border-color: var(--line); }
+#confirmation-dialog .confirm-symbol { background: #f4e1d9; }
+.planner-header { background: #f6faff; border-color: var(--line); box-shadow: none; }
+.planner-header .eyebrow, .planner-progress .eyebrow { color: var(--blue); }
+.planner-header p, .planner-progress p, .planner-section-head p { color: var(--muted-ink); }
+#planner-dialog .planner-header [data-close], #planner-dialog .planner-progress [data-back] { color: #31566b; background: #e3eef8; border-color: #c5d8e7; }
+.planner-stats > div, .planner-section { border-color: var(--line); }
+.planner-stats strong { color: var(--ink); }
+.planner-stats span { color: #537083; }
+.planner-builder label, .planner-progress label { color: #35566c; }
+.planner-builder input, .planner-builder select, .planner-progress input { background: #eff6fc; border-color: #adc7da; }
+.planner-builder button[type=submit] { color: #fff; background: var(--blue); border-color: var(--blue); }
+.planner-builder button[type=submit]:hover { color: #fff; background: var(--accent-dark); }
+.planner-window-lists .planner-section + .planner-section { border-color: var(--line); }
+.planner-count { color: #294d63; background: #d6e7f4; }
+.planner-entry, .planner-session, .planner-proposal-details { background: #f5faff; border-color: #c6d8e7; }
+.planner-entry strong, .planner-session strong { color: var(--ink); }
+.planner-entry span, .planner-session p { color: var(--muted-ink); }
+.planner-empty { color: #5e7689; background: #edf5fc; border-color: #bed3e3; }
+.planner-preview { background: var(--surface); }
+.planner-preview > .actions .soft { color: #294e65; background: #e5f0fa; }
+.planner-proposal { background: #f8eae3; border-color: #e3bfaf; }
+.planner-proposal h3 { color: #8b4936; }
+.planner-proposal > p { color: #74584e; }
+.planner-session-status { color: #375e75; background: #e2eef8; }
+.planner-session > .actions button { color: #31566b; background: #e8f2fb; border-color: #c3d8e7; }
+.planner-session > .actions button:hover { background: #fff; }
+
+@media (max-width: 700px) {
+  .sidebar {
+    background: rgba(40, 92, 121, .98);
+    border-top-color: #194a65;
+    box-shadow: 0 -6px 24px rgba(26, 65, 88, .15);
+  }
+  .nav-item { color: #d6e8f3; }
+  .nav-item.selected { color: var(--nav); background: #edf6fc; border-color: #edf6fc; }
+  .nav-item.selected .icon { filter: none; }
+  .topbar { background: rgba(235, 244, 252, .97); }
+  .mobile-brand { color: var(--ink); }
+  .task-table-row { background: var(--surface); border-color: var(--line); border-radius: 7px; }
+  .task-field-label { color: #617a8b; font-family: inherit; }
+  .detail-drawer, dialog { border-radius: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button { transition: none; }
+  main > * { animation: none !important; }
+}
